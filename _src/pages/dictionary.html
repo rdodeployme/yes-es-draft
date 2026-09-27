@@ -1,0 +1,182 @@
+<link rel="stylesheet" href="{{R}}assets/css/pages.css?v=1">
+
+<section class="hero hero-sub">
+  <div class="wrap">
+    <p class="eyebrow">Data dictionary · v0.1 draft</p>
+    <h1>Data dictionary</h1>
+    <p class="lead">The blueprint for the portal and its database. For every field: its name, definition, unit, frequency, source, whether it is mandatory or optional, how it is calculated, and which score it feeds.</p>
+    <dl class="dd-stats">
+      <div><dt>Fields you enter</dt><dd data-n="inputs">98</dd></div>
+      <div><dt>Figures YES calculates</dt><dd data-n="calcs">25</dd></div>
+      <div><dt>Mandatory each month</dt><dd data-n="req-m">9</dd></div>
+      <div><dt>Organisation profile fields</dt><dd data-n="profile">16</dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- Fields: rendered live from YESD.FIELDS, with filters, search and CSV download -->
+<section class="sec tight" id="fields">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow">Fields</p><h2>Every field, and every figure YES calculates</h2></div>
+      <p class="lead">Filter by category, type or frequency, or search by name, id, unit or source. The CSV download contains the rows shown.</p>
+    </div>
+  </div>
+  <div class="wrap xw">
+    <form class="dd-tools" role="search" aria-label="Filter the data dictionary" onsubmit="return false">
+      <div class="field"><label for="dd-q">Search</label><input type="search" id="dd-q" placeholder="Name, id, unit or source" autocomplete="off" spellcheck="false"></div>
+      <div class="field"><label for="dd-cat">Category</label><select id="dd-cat"><option value="">All categories</option></select></div>
+      <fieldset class="seg"><legend>Type</legend><div class="seg-in">
+        <label><input type="radio" name="dd-type" value="" checked><span>All</span></label>
+        <label><input type="radio" name="dd-type" value="input"><span>Entered by you</span></label>
+        <label><input type="radio" name="dd-type" value="calc"><span>Calculated by YES</span></label>
+      </div></fieldset>
+      <fieldset class="seg"><legend>Frequency</legend><div class="seg-in">
+        <label><input type="radio" name="dd-freq" value="" checked><span>All</span></label>
+        <label title="Monthly"><input type="radio" name="dd-freq" value="M"><span><span aria-hidden="true">M</span><span class="sr-only">Monthly</span></span></label>
+        <label title="Quarterly"><input type="radio" name="dd-freq" value="Q"><span><span aria-hidden="true">Q</span><span class="sr-only">Quarterly</span></span></label>
+        <label title="Annual"><input type="radio" name="dd-freq" value="A"><span><span aria-hidden="true">A</span><span class="sr-only">Annual</span></span></label>
+        <label title="Static"><input type="radio" name="dd-freq" value="S"><span><span aria-hidden="true">S</span><span class="sr-only">Static</span></span></label>
+      </div></fieldset>
+    </form>
+    <div class="dd-bar">
+      <p class="dd-count" id="dd-count" aria-live="polite">Showing all fields</p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost btn-sm" id="dd-reset">Reset filters</button>
+        <button type="button" class="btn btn-ink btn-sm" id="dd-csv"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13.5h11"/></svg><span id="dd-csv-l">Download CSV</span></button>
+      </div>
+    </div>
+    <div class="tbl-wrap dd-wrap" tabindex="0" role="region" aria-label="Data dictionary table, scrolls sideways on small screens">
+      <table class="tbl dd-tbl" id="dd-tbl">
+        <caption class="sr-only">YES data dictionary: the fields customers enter and the figures YES calculates, grouped by category</caption>
+        <colgroup><col class="k1"><col class="k2"><col class="k3"><col class="k4"><col class="k5"><col class="k6"><col class="k7"><col class="k8"></colgroup>
+        <thead><tr>
+          <th scope="col" class="c-id">ID</th><th scope="col">Field and definition</th><th scope="col">Unit and kind</th><th scope="col">Frequency</th><th scope="col">Type</th><th scope="col">Source</th><th scope="col">Calculation</th><th scope="col">Feeds score</th>
+        </tr></thead>
+        <tbody><tr><td colspan="8" class="dd-empty">Loading the data dictionary…</td></tr></tbody>
+      </table>
+    </div>
+    <noscript><p class="js-fail mt-2">The data dictionary is built from the portal's field definitions and needs JavaScript to display.</p></noscript>
+    <p class="dd-legend"><span><b>Frequency</b>Monthly · Quarterly, reported in Sep, Dec, Mar and Jun · Annual, reported in June · Static, confirm when it changes</span><span><b>Mandatory</b>Needed for a complete month</span><span><b>Calculated</b>Worked out by YES each month, never typed</span></p>
+  </div>
+</section>
+
+<!-- Organisation profile: rendered live from YESD.PROFILE -->
+<section class="sec sec-white" id="profile">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow">Organisation profile</p><h2>Set once, used for factors, intensities, baselines and targets</h2></div>
+      <p class="lead">The profile picks the factors that apply, such as your state's electricity factor. It also gives the denominators for per-resident and per-employee figures, the baseline year and your targets.</p>
+    </div>
+  </div>
+  <div class="wrap xw">
+    <div class="tbl-wrap" tabindex="0" role="region" aria-label="Organisation profile table, scrolls sideways on small screens">
+      <table class="tbl dd-tbl pf-tbl">
+        <caption class="sr-only">Organisation profile fields</caption>
+        <thead><tr><th scope="col" class="c-id">ID</th><th scope="col">Field and definition</th><th scope="col">Kind</th><th scope="col">Unit</th><th scope="col">Mandatory</th><th scope="col">Options</th></tr></thead>
+        <tbody id="pf-body"><tr><td colspan="6" class="dd-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="note mt-2">Where an organisation has not set a target, YES uses a default in the score. The defaults are listed in the <a class="link" href="{{R}}method/#score">method</a>.</p>
+  </div>
+</section>
+
+<section class="sec tight cta">
+  <div class="wrap cta-in">
+    <div>
+      <h2>See these fields in the portal</h2>
+      <p>The portal demo uses this dictionary for monthly data entry, evidence and the calculations.</p>
+    </div>
+    <div class="btn-row">
+      <a class="btn btn-primary btn-lg" href="{{R}}portal/">Open the portal demo {{ARROW}}</a>
+      <a class="btn btn-ink btn-lg" href="{{R}}method/">Read the method</a>
+    </div>
+  </div>
+</section>
+
+<!--SCRIPTS
+<script src="{{R}}assets/js/dictionary.js?v={{V}}"></script>
+<script>
+/* Data dictionary: the full table is built live from YESD, so it always matches the portal. */
+(function(){
+  var D=window.YESD, d=document, tbl=d.getElementById('dd-tbl');
+  if(!tbl) return;
+  if(!D||!D.FIELDS){ tbl.tBodies[0].innerHTML='<tr><td colspan="8" class="dd-empty">The data dictionary could not be loaded.</td></tr>'; return; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  var CAT=D.CAT, FREQ=D.FREQ, TYPE={input:'Entered by you', calc:'Calculated by YES'}, NA='<span class="na" aria-label="Not applicable">—</span>';
+  var q=d.getElementById('dd-q'), sel=d.getElementById('dd-cat'), cnt=d.getElementById('dd-count'), csvL=d.getElementById('dd-csv-l');
+  var ROWS=D.FIELDS.map(function(f){ return {f:f, h:[f.id,f.name,f.def,f.src,f.unit,f.calc||'',CAT[f.cat]?CAT[f.cat].name:'',TYPE[f.type],FREQ[f.freq],(f.options||[]).join(' ')].join(' ').toLowerCase()}; });
+  var SHOWN=D.FIELDS.slice();
+
+  function put(k,v){ [].forEach.call(d.querySelectorAll('[data-n="'+k+'"]'),function(el){ el.textContent=v; }); }
+  put('inputs', D.INPUTS.length); put('calcs', D.CALCS.length); put('profile', D.PROFILE.length);
+  put('req-m', D.INPUTS.filter(function(f){ return f.req&&f.freq==='M'; }).length);
+
+  D.CATEGORIES.forEach(function(c){ var o=d.createElement('option'); o.value=c.k; o.textContent=c.name; sel.appendChild(o); });
+  function radio(n){ var r=d.querySelector('input[name="'+n+'"]:checked'); return r?r.value:''; }
+  function setRadio(n,v){ var r=d.querySelector('input[name="'+n+'"][value="'+v+'"]'); if(r) r.checked=true; }
+  function state(){ return {q:q.value.trim(), cat:sel.value, type:radio('dd-type'), freq:radio('dd-freq')}; }
+
+  function row(f){
+    var calc=f.type==='calc';
+    return '<tr>'+
+      '<td class="c-id"><span class="id">'+esc(f.id).replace(/_/g,'_<wbr>')+'</span></td>'+
+      '<td class="fd"><span class="nm">'+esc(f.name)+'</span><span class="df">'+esc(f.def)+'</span>'+(f.options?'<span class="op">Options: '+esc(f.options.join(', '))+'</span>':'')+'</td>'+
+      '<td class="u">'+(f.unit?esc(f.unit):NA)+'<span class="kd">'+esc(f.kind)+'</span></td>'+
+      '<td class="fq">'+esc(FREQ[f.freq]||f.freq)+'</td>'+
+      '<td><span class="chip sm '+(calc?'calc':'in')+'" title="'+esc(TYPE[f.type])+'">'+(calc?'Calculated':'Entered')+'</span>'+(calc?'':(f.req?'<span class="rq req-y">Mandatory</span>':'<span class="rq">Optional</span>'))+'</td>'+
+      '<td class="src">'+esc(f.src)+'</td>'+
+      '<td class="cx">'+(calc&&f.calc?esc(f.calc):NA)+'</td>'+
+      '<td class="sc">'+(f.score||[]).map(function(k){ return '<span>'+esc(CAT[k]?CAT[k].short:k)+'</span>'; }).join('')+'</td>'+
+    '</tr>';
+  }
+
+  function render(){
+    var s=state(), terms=s.q?s.q.toLowerCase().split(/\s+/):[];
+    SHOWN=ROWS.filter(function(r){ var f=r.f;
+      if(s.cat&&f.cat!==s.cat) return false; if(s.type&&f.type!==s.type) return false; if(s.freq&&f.freq!==s.freq) return false;
+      for(var i=0;i<terms.length;i++){ if(r.h.indexOf(terms[i])<0) return false; } return true; }).map(function(r){ return r.f; });
+    var html=[];
+    D.CATEGORIES.forEach(function(c){
+      var g=SHOWN.filter(function(f){ return f.cat===c.k; }); if(!g.length) return;
+      var ni=g.filter(function(f){ return f.type==='input'; }).length, nc=g.length-ni;
+      html.push('<tbody><tr class="grp"><th colspan="8" scope="rowgroup"><span class="gi">'+esc(c.name)+'<small>'+[ni?ni+' entered':'', nc?nc+' calculated':''].filter(Boolean).join(' · ')+'</small></span></th></tr>'+g.map(row).join('')+'</tbody>');
+    });
+    [].slice.call(tbl.tBodies).forEach(function(b){ b.parentNode.removeChild(b); });
+    tbl.insertAdjacentHTML('beforeend', html.length ? html.join('') : '<tbody><tr><td colspan="8" class="dd-empty">No fields match these filters.<br><button type="button" class="btn btn-ghost btn-sm" data-reset>Reset filters</button></td></tr></tbody>');
+    var all=SHOWN.length===D.FIELDS.length;
+    cnt.innerHTML='Showing <b>'+SHOWN.length+'</b> of '+D.FIELDS.length+' fields';
+    csvL.textContent=all?'Download CSV':'Download CSV · '+SHOWN.length+' row'+(SHOWN.length===1?'':'s');
+    d.getElementById('dd-csv').disabled=!SHOWN.length;
+    try{ var u=new URL(location.href); ['q','cat','type','freq'].forEach(function(k){ if(s[k]) u.searchParams.set(k,s[k]); else u.searchParams.delete(k); }); history.replaceState(null,'',u.pathname+u.search+u.hash); }catch(e){}
+  }
+
+  function reset(){ q.value=''; sel.value=''; setRadio('dd-type',''); setRadio('dd-freq',''); render(); }
+  var t=null;
+  q.addEventListener('input',function(){ clearTimeout(t); t=setTimeout(render,120); });
+  sel.addEventListener('change',render);
+  [].forEach.call(d.querySelectorAll('input[name="dd-type"],input[name="dd-freq"]'),function(r){ r.addEventListener('change',render); });
+  d.getElementById('dd-reset').addEventListener('click',reset);
+  tbl.addEventListener('click',function(ev){ if(ev.target.closest&&ev.target.closest('[data-reset]')) reset(); });
+
+  function cell(v){ v=v==null?'':String(v); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+  d.getElementById('dd-csv').addEventListener('click',function(){
+    var head=['id','name','category','type','unit','frequency','mandatory','kind','source','definition','calculation','scores'];
+    var lines=[head.join(',')].concat(SHOWN.map(function(f){ var calc=f.type==='calc';
+      return [f.id, f.name, CAT[f.cat]?CAT[f.cat].name:f.cat, TYPE[f.type]||f.type, f.unit||'', FREQ[f.freq]||f.freq, calc?'n/a':(f.req?'yes':'no'), f.kind, f.src, f.def, f.calc||'', (f.score||[]).map(function(k){ return CAT[k]?CAT[k].name:k; }).join('; ')].map(cell).join(','); }));
+    var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
+    var a=d.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='yes-data-dictionary-'+String(D.VERSION||'v0.1').replace(/\s+/g,'-')+'.csv';
+    d.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.parentNode.removeChild(a); },1000);
+  });
+
+  try{ var P=new URLSearchParams(location.search); if(P.get('q')) q.value=P.get('q'); if(P.get('cat')&&CAT[P.get('cat')]) sel.value=P.get('cat'); if(P.get('type')) setRadio('dd-type',P.get('type')); if(P.get('freq')) setRadio('dd-freq',P.get('freq')); }catch(e){}
+  render();
+
+  var pb=d.getElementById('pf-body');
+  if(pb&&D.PROFILE) pb.innerHTML=D.PROFILE.map(function(f){
+    return '<tr><td class="c-id"><span class="id">'+esc(f.id).replace(/_/g,'_<wbr>')+'</span></td><td class="fd"><span class="nm">'+esc(f.name)+'</span><span class="df">'+esc(f.def)+'</span></td><td class="kd">'+esc(f.kind)+'</td><td class="u">'+(f.unit?esc(f.unit):NA)+'</td><td>'+(f.req?'<span class="req-y">Mandatory</span>':'Optional')+'</td><td class="src">'+(f.options?esc(f.options.join(', ')):NA)+'</td></tr>';
+  }).join('');
+})();
+</script>
+-->

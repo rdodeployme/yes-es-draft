@@ -1,0 +1,254 @@
+<link rel="stylesheet" href="{{R}}assets/css/pages.css?v=1">
+
+<section class="hero hero-sub">
+  <div class="wrap">
+    <p class="eyebrow">Method v0.1 · draft for discussion</p>
+    <h1>Method</h1>
+    <p class="lead">How YES turns raw numbers into emissions, rates, trends and the Yindyamarra Environmental Score: the formulas, the factors and their editions, and the limits of what the figures can say.</p>
+  </div>
+</section>
+
+<!-- Tables marked data-f are rendered live from YESE and YESD by the script below. The HTML between the pre markers is a static copy for when scripts do not run. -->
+<section class="sec">
+  <div class="wrap mth">
+    <nav class="toc" aria-label="On this page">
+      <p class="kicker">On this page</p>
+      <ol>
+        <li><a href="#principles">Principles</a></li>
+        <li><a href="#emissions">Emissions</a></li>
+        <li><a href="#factors">Factors</a></li>
+        <li><a href="#rates">Rates and intensities</a></li>
+        <li><a href="#score">The score</a></li>
+        <li><a href="#evidence">Evidence and verification</a></li>
+        <li><a href="#boundary">Boundary</a></li>
+        <li><a href="#limitations">Limitations</a></li>
+        <li><a href="#claims">Claims we don't make</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+      <p class="ver">Version 0.1, a draft for discussion. Factors, rules and weights may change before launch.</p>
+    </nav>
+
+    <div class="doc">
+      <section class="doc-sec" id="principles" aria-labelledby="h-principles">
+        <h2 id="h-principles">Principles</h2>
+        <ul class="prin">
+          <li><b>Collect once, calculate everything else</b><p>Customers enter operational quantities once. Every emission, rate, intensity, trend and score is calculated from them, so a figure cannot disagree with the numbers behind it.</p></li>
+          <li><b>Raw numbers in, no typed percentages</b><p>Litres, kilowatt-hours, gigajoules, kilolitres, tonnes, hectares and counts. Nobody types a rate YES can calculate. The only percentages entered are measured ones, such as a bin audit's contamination rate.</p></li>
+          <li><b>Every factor has an edition</b><p>Each factor is recorded with its source and edition, so any figure can be traced to the factor that produced it.</p></li>
+          <li><b>Two emissions figures, never netted</b><p>Operational emissions are what the organisation emitted. Avoided emissions are a modelled estimate of what recycling avoided elsewhere. They are reported separately and never subtracted from each other.</p></li>
+        </ul>
+      </section>
+
+      <section class="doc-sec" id="emissions" aria-labelledby="h-emissions">
+        <h2 id="h-emissions">Emissions</h2>
+        <p class="lede-sm">All emissions are in tonnes of carbon dioxide equivalent (t CO₂-e), calculated each month from the raw quantities entered.</p>
+        <h3>Scope 1: fuels</h3>
+        <div class="fx-box"><span class="lbl">Diesel, petrol, LPG and biodiesel</span>t CO₂-e = litres ÷ 1,000 × energy content (GJ/kL) × emission factor (kg CO₂-e/GJ) ÷ 1,000<span class="eg">Example: 38,400 L of diesel ÷ 1,000 × 38.6 GJ/kL × 70.5 kg CO₂-e/GJ ÷ 1,000 = 104.5 t CO₂-e</span></div>
+        <h3>Scope 1: natural gas</h3>
+        <div class="fx-box"><span class="lbl">Natural gas</span>t CO₂-e = GJ × 51.53 kg CO₂-e/GJ ÷ 1,000</div>
+        <h3>Scope 2: grid electricity</h3>
+        <div class="fx-box"><span class="lbl">Location-based, by state or territory</span>t CO₂-e = kWh × state factor (kg CO₂-e/kWh) ÷ 1,000<span class="eg">Example: 612,000 kWh in Victoria × 0.77 kg CO₂-e/kWh ÷ 1,000 = 471.2 t CO₂-e</span></div>
+        <p>The state comes from the organisation profile. Western Australia uses the factor for the South West Interconnected System (SWIS).</p>
+        <h3>Scope 3: reported categories</h3>
+        <div class="fx-box"><span class="lbl">Waste to landfill and upstream energy</span>t CO₂-e = landfill tonnes × landfill factor + upstream fuels + upstream gas + upstream electricity
+          <ul>
+            <li>Landfill factor: Council 1.6; Business, Government agency and Other 1.3 t CO₂-e per tonne (mixed municipal solid waste, and commercial and industrial waste)</li>
+            <li>Upstream fuels: litres ÷ 1,000 × GJ/kL × Scope 3 factor (kg CO₂-e/GJ) ÷ 1,000</li>
+            <li>Upstream gas: GJ × the state's Scope 3 gas factor ÷ 1,000</li>
+            <li>Upstream electricity: kWh × the state's Scope 3 factor ÷ 1,000</li>
+          </ul>
+        </div>
+        <p>These are the Scope 3 categories YES reports today, following the category structure of the GHG Protocol Corporate Value Chain (Scope 3) Standard. Business flights are recorded but not yet converted: see <a class="link" href="#limitations">Limitations</a>.</p>
+        <h3>Total operational emissions</h3>
+        <div class="fx-box">t CO₂-e = Scope 1 + Scope 2 + Scope 3 (reported categories)</div>
+        <h3>Avoided emissions, reported separately</h3>
+        <div class="fx-box av"><span class="lbl">A modelled estimate</span>t CO₂-e avoided = tonnes recovered × avoided-emissions factor, for steel, aluminium, plain timber, green waste, concrete and tyres (tyres at 9.5 kg each)</div>
+        <p>An estimate of emissions avoided elsewhere because material was recycled rather than made new. It is shown beside operational emissions, never deducted from them, and never an offset.</p>
+      </section>
+
+      <section class="doc-sec" id="factors" aria-labelledby="h-factors">
+        <h2 id="h-factors">Factors</h2>
+        <p class="edition"><b>Edition</b><span data-f="edition">National Greenhouse Accounts Factors 2024 (DCCEEW), as reproduced in the Commonwealth Emissions Reporting Framework 2024–25</span></p>
+        <div class="fac-grid mt-3" data-f="factors"><!--pre:factors--><div class="fac wide"><h3>Grid electricity and natural gas, by state</h3><div class="tbl-wrap"><table class="tbl"><caption class="sr-only">Grid electricity and natural gas emission factors by state</caption><thead><tr><th scope="col">State or territory</th><th scope="col" class="r">Electricity Scope 2<br><span class="u">kg CO₂-e/kWh</span></th><th scope="col" class="r">Electricity Scope 3<br><span class="u">kg CO₂-e/kWh</span></th><th scope="col" class="r">Natural gas Scope 3<br><span class="u">kg CO₂-e/GJ</span></th></tr></thead><tbody><tr><th scope="row" class="rh"><span class="id">VIC</span> Victoria</th><td class="r">0.77</td><td class="r">0.09</td><td class="r">4.0</td></tr><tr><th scope="row" class="rh"><span class="id">NSW</span> New South Wales</th><td class="r">0.66</td><td class="r">0.04</td><td class="r">13.1</td></tr><tr><th scope="row" class="rh"><span class="id">ACT</span> Australian Capital Territory</th><td class="r">0.66</td><td class="r">0.04</td><td class="r">13.1</td></tr><tr><th scope="row" class="rh"><span class="id">QLD</span> Queensland</th><td class="r">0.74</td><td class="r">0.10</td><td class="r">8.8</td></tr><tr><th scope="row" class="rh"><span class="id">SA</span> South Australia</th><td class="r">0.23</td><td class="r">0.05</td><td class="r">10.7</td></tr><tr><th scope="row" class="rh"><span class="id">WA</span> Western Australia (SWIS)</th><td class="r">0.51</td><td class="r">0.06</td><td class="r">4.1</td></tr><tr><th scope="row" class="rh"><span class="id">TAS</span> Tasmania</th><td class="r">0.15</td><td class="r">0.03</td><td class="r">4.0</td></tr><tr><th scope="row" class="rh"><span class="id">NT</span> Northern Territory</th><td class="r">0.56</td><td class="r">0.07</td><td class="r">4.0</td></tr></tbody></table></div><p class="cap">Electricity is location-based. Natural gas Scope 1 is 51.53 kg CO₂-e/GJ in every state. Scope 3 gas factors are metropolitan values.</p></div><div class="fac wide"><h3>Fuels</h3><div class="tbl-wrap"><table class="tbl"><caption class="sr-only">Fuel energy contents and emission factors</caption><thead><tr><th scope="col">Fuel</th><th scope="col" class="r">Energy content<br><span class="u">GJ/kL</span></th><th scope="col" class="r">Scope 1<br><span class="u">kg CO₂-e/GJ</span></th><th scope="col" class="r">Scope 3<br><span class="u">kg CO₂-e/GJ</span></th><th scope="col" class="r">Scope 1 per litre<br><span class="u">kg CO₂-e/L</span></th></tr></thead><tbody><tr><th scope="row" class="rh">Diesel</th><td class="r">38.6</td><td class="r">70.50</td><td class="r">17.30</td><td class="r">2.721</td></tr><tr><th scope="row" class="rh">Petrol</th><td class="r">34.2</td><td class="r">67.62</td><td class="r">17.20</td><td class="r">2.313</td></tr><tr><th scope="row" class="rh">LPG</th><td class="r">26.2</td><td class="r">61.00</td><td class="r">20.20</td><td class="r">1.598</td></tr><tr><th scope="row" class="rh">Biodiesel or renewable diesel</th><td class="r">34.6</td><td class="r">2.50</td><td class="r">0.00</td><td class="r">0.087</td></tr></tbody></table></div><p class="cap">Diesel: Scope 1 is 70.41–70.50 kg/GJ by vehicle type; 70.5 used. Scope 1 per litre is calculated from the energy content and the Scope 1 factor.</p></div><div class="fac wide"><h3>Waste to landfill</h3><div class="tbl-wrap"><table class="tbl"><caption class="sr-only">Landfill emission factors by organisation type</caption><thead><tr><th scope="col">Organisation type</th><th scope="col" class="r">Factor<br><span class="u">t CO₂-e per tonne</span></th><th scope="col">Basis</th></tr></thead><tbody><tr><th scope="row" class="rh">Council</th><td class="r">1.6</td><td>Mixed municipal solid waste</td></tr><tr><th scope="row" class="rh">Business</th><td class="r">1.3</td><td>Commercial and industrial waste</td></tr><tr><th scope="row" class="rh">Government agency</th><td class="r">1.3</td><td>Commercial and industrial waste</td></tr><tr><th scope="row" class="rh">Other</th><td class="r">1.3</td><td>Commercial and industrial waste</td></tr></tbody></table></div><p class="cap">Applied to general waste to landfill, as a Scope 3 category.</p></div><div class="fac"><h3>Avoided emissions, reported separately</h3><div class="tbl-wrap"><table class="tbl"><caption class="sr-only">Avoided-emissions factors</caption><thead><tr><th scope="col">Material recovered</th><th scope="col" class="r">Factor<br><span class="u">t CO₂-e avoided per tonne</span></th></tr></thead><tbody><tr><th scope="row" class="rh">Steel</th><td class="r">0.44</td></tr><tr><th scope="row" class="rh">Aluminium</th><td class="r">17.72</td></tr><tr><th scope="row" class="rh">Plain timber</th><td class="r">1.35</td></tr><tr><th scope="row" class="rh">Green waste</th><td class="r">0.32</td></tr><tr><th scope="row" class="rh">Concrete</th><td class="r">0.02</td></tr><tr><th scope="row" class="rh">Tyres</th><td class="r">1.07</td></tr></tbody></table></div><p class="cap">NSW DECCW (2010), Environmental benefits of recycling. Flagged as dated. A modelled estimate, never deducted and never an offset.</p></div><div class="fac"><h3>Default unit weights</h3><div class="tbl-wrap"><table class="tbl"><caption class="sr-only">Default unit weights</caption><thead><tr><th scope="col">Item</th><th scope="col" class="r">Weight<br><span class="u">kg each</span></th><th scope="col">Used for</th></tr></thead><tbody><tr><th scope="row" class="rh">Mattress</th><td class="r">80</td><td>Mattresses recovered</td></tr><tr><th scope="row" class="rh">Tyre</th><td class="r">9.5</td><td>Tyres recovered, and avoided emissions for tyres</td></tr><tr><th scope="row" class="rh">Whitegood</th><td class="r">60</td><td>Whitegoods recovered</td></tr></tbody></table></div><p class="cap">Counts are converted to tonnes with these defaults unless the items are weighed.</p></div><!--/pre:factors--></div>
+      </section>
+
+      <section class="doc-sec" id="rates" aria-labelledby="h-rates">
+        <h2 id="h-rates">Rates and intensities</h2>
+        <p class="lede-sm">Every rate and intensity is calculated from the raw numbers, never typed. Plug-in hybrids count as half an electric vehicle. Recovery, diversion and renewable shares are capped at 100%. In the score, rates are taken over the last 12 months together, except fleet electrification, which uses the current fleet.</p>
+        <div class="fac mt-3" data-f="rates"><!--pre:rates--><div class="tbl-wrap"><table class="tbl"><caption class="sr-only">Rates and intensities calculated by YES</caption><thead><tr><th scope="col">Figure</th><th scope="col">Unit</th><th scope="col">Calculation</th></tr></thead><tbody><tr><th scope="row" class="rh">Fleet fuel efficiency<br><span class="id">fleet_eff</span></th><td><span class="u">L/100 km</span></td><td><span class="cx">(diesel + petrol + LPG + biodiesel) ÷ fleet km × 100</span></td></tr><tr><th scope="row" class="rh">Fleet electrification<br><span class="id">fleet_ev_pct</span></th><td><span class="u">%</span></td><td><span class="cx">(battery electric vehicles + electric trucks + ½ × plug-in hybrids) ÷ all vehicles × 100</span></td></tr><tr><th scope="row" class="rh">Renewable electricity share<br><span class="id">renew_pct</span></th><td><span class="u">%</span></td><td><span class="cx">(renewable purchased + solar consumed onsite) ÷ (grid electricity + solar consumed onsite) × 100</span></td></tr><tr><th scope="row" class="rh">Electricity per employee<br><span class="id">elec_per_fte</span></th><td><span class="u">kWh/FTE</span></td><td><span class="cx">grid electricity ÷ employees</span></td></tr><tr><th scope="row" class="rh">Electricity per m²<br><span class="id">elec_per_m2</span></th><td><span class="u">kWh/m²</span></td><td><span class="cx">grid electricity ÷ floor area</span></td></tr><tr><th scope="row" class="rh">Alternative water share<br><span class="id">alt_water_pct</span></th><td><span class="u">%</span></td><td><span class="cx">(recycled + rainwater + stormwater + wastewater reused) ÷ all water used × 100</span></td></tr><tr><th scope="row" class="rh">Water per employee<br><span class="id">water_per_fte</span></th><td><span class="u">kL/FTE</span></td><td><span class="cx">potable water ÷ employees</span></td></tr><tr><th scope="row" class="rh">Water per facility<br><span class="id">water_per_site</span></th><td><span class="u">kL/site</span></td><td><span class="cx">potable water ÷ facilities</span></td></tr><tr><th scope="row" class="rh">Water per resident serviced<br><span class="id">water_per_res</span></th><td><span class="u">L/resident</span></td><td><span class="cx">potable water × 1,000 ÷ residents</span></td></tr><tr><th scope="row" class="rh">Total recovered<br><span class="id">recovered_t</span></th><td><span class="u">t</span></td><td><span class="cx">sum of every recovered stream (mattresses at 80 kg, tyres at 9.5 kg, whitegoods at 60 kg)</span></td></tr><tr><th scope="row" class="rh">Resource recovery rate<br><span class="id">recovery_pct</span></th><td><span class="u">%</span></td><td><span class="cx">total recovered ÷ total waste generated × 100</span></td></tr><tr><th scope="row" class="rh">Landfill diversion rate<br><span class="id">diversion_pct</span></th><td><span class="u">%</span></td><td><span class="cx">(total waste − landfill) ÷ total waste × 100</span></td></tr><tr><th scope="row" class="rh">Reuse rate<br><span class="id">reuse_pct</span></th><td><span class="u">%</span></td><td><span class="cx">furniture reused ÷ total waste × 100</span></td></tr><tr><th scope="row" class="rh">Waste per resident<br><span class="id">waste_per_res</span></th><td><span class="u">kg/resident</span></td><td><span class="cx">total waste × 1,000 ÷ residents</span></td></tr><tr><th scope="row" class="rh">Waste per employee<br><span class="id">waste_per_fte</span></th><td><span class="u">kg/FTE</span></td><td><span class="cx">total waste × 1,000 ÷ employees</span></td></tr><tr><th scope="row" class="rh">Recycled-content procurement share<br><span class="id">proc_recycled_pct</span></th><td><span class="u">%</span></td><td><span class="cx">recycled-content spend ÷ total spend × 100</span></td></tr><tr><th scope="row" class="rh">Data completeness<br><span class="id">data_complete_pct</span></th><td><span class="u">%</span></td><td><span class="cx">mandatory fields supplied ÷ mandatory fields due × 100</span></td></tr><tr><th scope="row" class="rh">Evidence share<br><span class="id">evidence_pct</span></th><td><span class="u">%</span></td><td><span class="cx">fields backed by an attached document ÷ fields supplied × 100</span></td></tr><tr><th scope="row" class="rh">Emissions per resident<br><span class="id">emis_per_res</span></th><td><span class="u">kg CO₂-e/resident</span></td><td><span class="cx">total emissions × 1,000 ÷ residents</span></td></tr><tr><th scope="row" class="rh">Emissions per employee<br><span class="id">emis_per_fte</span></th><td><span class="u">t CO₂-e/FTE</span></td><td><span class="cx">total emissions ÷ employees</span></td></tr></tbody></table></div><p class="cap">From the data dictionary. Per-resident figures apply to councils; per-m² and per-facility figures need the floor area and facility count in the profile.</p><!--/pre:rates--></div>
+      </section>
+
+      <section class="doc-sec" id="score" aria-labelledby="h-score">
+        <h2 id="h-score">The Yindyamarra Environmental Score</h2>
+        <p class="lede-sm">One monthly score out of 100. Each of the ten categories is scored from 0 to 100 by the rule below. The overall score is the average of the category scores that have data, rounded to a whole number, with each category counting equally.</p>
+        <h3>Category rules</h3>
+        <div class="fac" data-f="rules"><!--pre:rules--><div class="tbl-wrap"><table class="tbl"><caption class="sr-only">How each category is scored</caption><thead><tr><th scope="col">Category</th><th scope="col">Rule</th></tr></thead><tbody><tr><th scope="row" class="rh">Energy &amp; Renewables</th><td>60% renewable electricity share (rolling 12 months) + 40% grid electricity use against the baseline (20% lower scores full marks, 20% higher scores none).</td></tr><tr><th scope="row" class="rh">Fleet &amp; Transport</th><td>60% fleet electrification (50% electric scores full marks) + 40% fuel use against the baseline (±20%).</td></tr><tr><th scope="row" class="rh">Carbon &amp; Emissions</th><td>Total operational emissions over the last 12 months against the baseline year (30% lower scores full marks, 30% higher scores none).</td></tr><tr><th scope="row" class="rh">Water</th><td>50% alternative water share (50% scores full marks) + 50% potable water use against the baseline (±20%).</td></tr><tr><th scope="row" class="rh">Waste &amp; Resource Recovery</th><td>70% landfill diversion rate + 30% contamination (0% scores full marks, 20% or more scores none).</td></tr><tr><th scope="row" class="rh">Circular Economy</th><td>50% recycled-content procurement share (30% scores full marks) + 30% reuse rate (10% scores full marks) + 20% stewardship programs (three or more scores full marks).</td></tr><tr><th scope="row" class="rh">Land &amp; Soil</th><td>Hectares rehabilitated or remediated in the last 12 months against the annual target.</td></tr><tr><th scope="row" class="rh">Biodiversity &amp; Nature</th><td>50% trees planted against the annual target + 50% hectares of native vegetation, habitat and wetland restored against the annual target.</td></tr><tr><th scope="row" class="rh">Community &amp; Participation</th><td>Program participants in the last 12 months against the annual target.</td></tr><tr><th scope="row" class="rh">Governance &amp; Improvement</th><td>50% data completeness + 30% evidence share (last three months) + 20% complaints and incidents closed.</td></tr></tbody></table></div><!--/pre:rules--></div>
+        <h3>Bands</h3>
+        <div class="fac narrow" data-f="bands"><!--pre:bands--><div class="tbl-wrap"><table class="tbl"><caption class="sr-only">Score bands</caption><thead><tr><th scope="col">Band</th><th scope="col">Score</th></tr></thead><tbody><tr><th scope="row" class="rh">Leading</th><td>80 and above</td></tr><tr><th scope="row" class="rh">Strong</th><td>65 to 79</td></tr><tr><th scope="row" class="rh">Developing</th><td>50 to 64</td></tr><tr><th scope="row" class="rh">Starting</th><td>Below 50</td></tr></tbody></table></div><!--/pre:bands--></div>
+        <h3>Provisional and not reported</h3>
+        <ul class="dl-lines">
+          <li><b>Unverified months</b><span>A month is provisional until YES verifies it, and so is any score that includes it.</span></li>
+          <li><b>Target-based categories</b><span>Land, Nature and Community are scored against annual targets, pro-rated until a full year of data exists. They are provisional until there are 12 months of data.</span></li>
+          <li><b>Categories with no data</b><span>Shown as not reported and not scored. The score states how many of the ten categories it covers.</span></li>
+        </ul>
+        <h3>Direction of travel and baseline</h3>
+        <p>Scores are shown month on month, year on year (against the same month a year earlier), over rolling 12 months, and against the baseline year set in the organisation profile. Trend parts of category scores compare the last 12 months with the same calendar months of the baseline year, so comparisons are seasonal. Where a baseline month is missing, the baseline year's monthly average stands in.</p>
+        <h3>Default targets</h3>
+        <p>Targets come from the organisation profile. Where an organisation has not set one, the score uses these defaults.</p>
+        <div class="fac" data-f="targets"><!--pre:targets--><div class="tbl-wrap"><table class="tbl"><caption class="sr-only">Default targets</caption><thead><tr><th scope="col">Target</th><th scope="col" class="r">Default</th><th scope="col">Unit</th><th scope="col">Used in</th></tr></thead><tbody><tr><th scope="row" class="rh">Emissions reduction target</th><td class="r">30</td><td><span class="u">% by 2030</span></td><td>Shown against actual performance</td></tr><tr><th scope="row" class="rh">Renewable electricity target</th><td class="r">50</td><td><span class="u">%</span></td><td>Shown against actual performance</td></tr><tr><th scope="row" class="rh">Landfill diversion target</th><td class="r">70</td><td><span class="u">%</span></td><td>Shown against actual performance</td></tr><tr><th scope="row" class="rh">Fleet electrification target</th><td class="r">30</td><td><span class="u">%</span></td><td>Shown against actual performance</td></tr><tr><th scope="row" class="rh">Trees planted per year (target)</th><td class="r">2,000</td><td><span class="u">trees</span></td><td>Nature score</td></tr><tr><th scope="row" class="rh">Land rehabilitated per year (target)</th><td class="r">10</td><td><span class="u">ha</span></td><td>Land score</td></tr><tr><th scope="row" class="rh">Program participants per year (target)</th><td class="r">3,000</td><td><span class="u">people</span></td><td>Community score</td></tr><tr><th scope="row" class="rh">Native vegetation, habitat and wetland restored per year (target)</th><td class="r">6</td><td><span class="u">ha</span></td><td>Nature score</td></tr></tbody></table></div><!--/pre:targets--></div>
+      </section>
+
+      <section class="doc-sec" id="evidence" aria-labelledby="h-evidence">
+        <h2 id="h-evidence">Evidence and verification</h2>
+        <p class="lede-sm">Customers attach the document behind each figure. YES grades the evidence and verifies the month.</p>
+        <div class="fac mt-2">
+          <div class="tbl-wrap"><table class="tbl"><caption class="sr-only">Evidence grades</caption>
+            <thead><tr><th scope="col">Grade</th><th scope="col">Meaning</th><th scope="col">For example</th></tr></thead>
+            <tbody>
+              <tr><td><span class="grade A">A</span></td><td><b>Primary document</b></td><td>A bill, docket or certificate</td></tr>
+              <tr><td><span class="grade B">B</span></td><td><b>System extract or reconciled internal record</b></td><td>A report from a finance, fleet, telematics or contractor system, or a register reconciled to source</td></tr>
+              <tr><td><span class="grade C">C</span></td><td><b>Estimate or unsupported</b></td><td>A reasonable estimate, or a figure without a document yet</td></tr>
+            </tbody></table></div>
+        </div>
+        <ul class="dl-lines mt-2">
+          <li><b>Month status</b><span>Each month moves from draft, to submitted, to verified. YES checks the figures against the evidence, grades each document and marks the month verified. Until then the month is provisional.</span></li>
+          <li><b>Evidence share</b><span>The Governance score counts figures backed by grade A or B evidence. A document attached but not yet graded counts until YES grades it.</span></li>
+          <li><b>What verification means</b><span>A check by YES of the figures against their evidence. It is not an audit or independent assurance.</span></li>
+        </ul>
+      </section>
+
+      <section class="doc-sec" id="boundary" aria-labelledby="h-boundary">
+        <h2 id="h-boundary">Boundary</h2>
+        <p>The organisation confirms its reporting boundary with YES: which sites, facilities, fleets and services are included. For councils, the waste figures can include the municipal waste service, such as kerbside collections, transfer stations and council operations, not only waste from council buildings. Landfill emissions from that waste are then part of Scope 3.</p>
+      </section>
+
+      <section class="doc-sec" id="limitations" aria-labelledby="h-limitations">
+        <h2 id="h-limitations">Limitations</h2>
+        <ul class="dl-lines">
+          <li><b>Flights</b><span>Recorded as domestic and international trips, but not converted to emissions until a factor is adopted, so they are not yet in the totals.</span></li>
+          <li><b>Other fuels</b><span>Recorded with their type and quantity, but not converted until a factor is set.</span></li>
+          <li><b>Avoided-emissions factors</b><span>From NSW DECCW (2010) and flagged as dated. Avoided emissions are a modelled estimate and are always reported separately.</span></li>
+          <li><b>Interim factors</b><span>Diesel uses a single Scope 1 factor of 70.5 kg CO₂-e/GJ, where the published values range from 70.41 to 70.50 by vehicle type. Scope 3 gas factors are metropolitan values.</span></li>
+          <li><b>Unit weights</b><span>Mattresses, tyres and whitegoods reported as counts are converted with default weights unless they are weighed.</span></li>
+          <li><b>Landfill factor</b><span>One default factor per organisation type, not specific to the landfill used or how it manages landfill gas.</span></li>
+          <li><b>Score rules and weights</b><span>A proposal for discussion in method v0.1, together with the default targets. They may change before launch.</span></li>
+        </ul>
+      </section>
+
+      <section class="doc-sec" id="claims" aria-labelledby="h-claims">
+        <h2 id="h-claims">Claims we don't make</h2>
+        <ul class="dl-lines">
+          <li><b>No carbon neutral, net zero or offset claims</b><span>YES figures report what an organisation used and emitted. They are not a basis for carbon neutral, net zero or offset claims, and YES does not make those claims from them.</span></li>
+          <li><b>Avoided emissions are not an offset</b><span data-f="c-avoided">Avoided emissions are a modelled estimate (NSW DECCW 2010 factors), reported separately. Never deducted from your emissions and never an offset.</span></li>
+          <li><b>The score is self-declared</b><span data-f="c-score">Self-declared under the published YES method. Not an accredited rating, certification or third-party verification.</span></li>
+        </ul>
+      </section>
+
+      <section class="doc-sec" id="sources" aria-labelledby="h-sources">
+        <h2 id="h-sources">Sources</h2>
+        <ol class="srcs">
+          <li>Department of Climate Change, Energy, the Environment and Water (DCCEEW), National Greenhouse Accounts Factors 2024, as reproduced in the Commonwealth Emissions Reporting Framework 2024–25 (Department of Finance, June 2025). Used for energy contents and Scope 1, 2 and 3 emission factors.</li>
+          <li>NSW Department of Environment, Climate Change and Water (DECCW), Environmental benefits of recycling (2010). Used for avoided-emissions factors.</li>
+          <li>GHG Protocol, Corporate Value Chain (Scope 3) Standard. Used for the Scope 3 category structure.</li>
+        </ol>
+      </section>
+    </div>
+  </div>
+</section>
+
+<section class="sec tight cta">
+  <div class="wrap cta-in">
+    <div>
+      <h2>Questions about the method?</h2>
+      <p>Method v0.1 is a draft for discussion. Tell us what your organisation needs it to cover.</p>
+    </div>
+    <div class="btn-row">
+      <a class="btn btn-primary btn-lg" href="mailto:{{EMAIL}}?subject=YES%20method%20v0.1">Email {{EMAIL}}</a>
+      <a class="btn btn-ink btn-lg" href="{{R}}data-dictionary/">Data dictionary</a>
+    </div>
+  </div>
+</section>
+
+<!--SCRIPTS
+<script src="{{R}}assets/js/dictionary.js?v={{V}}"></script>
+<script src="{{R}}assets/js/engine.js?v={{V}}"></script>
+<script>
+/* Method: factor tables, calculations, rules, bands and default targets are read live from the engine and dictionary. */
+(function(){
+  var D=window.YESD, E=window.YESE, d=document;
+  if(!D||!E||!E.FACTORS) return;
+  function f(k){ return d.querySelector('[data-f="'+k+'"]'); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function nf(v,dp){ return Number(v).toLocaleString('en-AU',{minimumFractionDigits:dp,maximumFractionDigits:dp}); }
+  function table(cap, head, rows, note){
+    return '<div class="tbl-wrap"><table class="tbl"><caption class="sr-only">'+esc(cap)+'</caption><thead><tr>'+head.map(function(h){ return '<th scope="col"'+(h.r?' class="r"':'')+'>'+h.t+'</th>'; }).join('')+'</tr></thead><tbody>'+
+      rows.map(function(r){ return '<tr>'+r.map(function(c,i){ return (i===0?'<th scope="row" class="rh">':'<td'+(head[i].r?' class="r"':'')+'>')+c+(i===0?'</th>':'</td>'); }).join('')+'</tr>'; }).join('')+'</tbody></table></div>'+(note?'<p class="cap">'+note+'</p>':'');
+  }
+  function block(title, html, cls){ return '<div class="fac'+(cls?' '+cls:'')+'"><h3>'+title+'</h3>'+html+'</div>'; }
+  var F=E.FACTORS, NAMES={}; (D.STATES||[]).forEach(function(s){ NAMES[s[0]]=s[1]; });
+  function set(k,html){ var el=f(k); if(el) el.innerHTML=html; }
+
+  try{ f('edition').textContent=F.edition; }catch(e){}
+  try{
+    var states=Object.keys(F.elec);
+    var out=[];
+    out.push(block('Grid electricity and natural gas, by state', table('Grid electricity and natural gas emission factors by state',
+      [{t:'State or territory'},{t:'Electricity Scope 2<br><span class="u">kg CO₂-e/kWh</span>',r:1},{t:'Electricity Scope 3<br><span class="u">kg CO₂-e/kWh</span>',r:1},{t:'Natural gas Scope 3<br><span class="u">kg CO₂-e/GJ</span>',r:1}],
+      states.map(function(s){ return ['<span class="id">'+esc(s)+'</span> '+esc(NAMES[s]||s), nf(F.elec[s].s2,2), nf(F.elec[s].s3,2), F.gas.s3[s]!=null?nf(F.gas.s3[s],1):'—']; }),
+      'Electricity is location-based. Natural gas Scope 1 is '+nf(F.gas.s1,2)+' kg CO₂-e/GJ in every state. Scope 3 gas factors are metropolitan values.'), 'wide'));
+    var FN={diesel:'Diesel',petrol:'Petrol',lpg:'LPG',biodiesel:'Biodiesel or renewable diesel'};
+    out.push(block('Fuels', table('Fuel energy contents and emission factors',
+      [{t:'Fuel'},{t:'Energy content<br><span class="u">GJ/kL</span>',r:1},{t:'Scope 1<br><span class="u">kg CO₂-e/GJ</span>',r:1},{t:'Scope 3<br><span class="u">kg CO₂-e/GJ</span>',r:1},{t:'Scope 1 per litre<br><span class="u">kg CO₂-e/L</span>',r:1}],
+      Object.keys(F.fuel).map(function(k){ var x=F.fuel[k]; return [esc(FN[k]||k), nf(x.gj,1), nf(x.s1,2), nf(x.s3,2), nf(x.gj*x.s1/1000,3)]; }),
+      Object.keys(F.fuel).filter(function(k){ return F.fuel[k].note; }).map(function(k){ return esc(FN[k]||k)+': '+esc(F.fuel[k].note); }).join(' ')+' Scope 1 per litre is calculated from the energy content and the Scope 1 factor.'), 'wide'));
+    var LB={Council:'Mixed municipal solid waste'};
+    out.push(block('Waste to landfill', table('Landfill emission factors by organisation type',
+      [{t:'Organisation type'},{t:'Factor<br><span class="u">t CO₂-e per tonne</span>',r:1},{t:'Basis'}],
+      Object.keys(F.landfill).map(function(k){ return [esc(k), nf(F.landfill[k],1), esc(LB[k]||'Commercial and industrial waste')]; }),
+      'Applied to general waste to landfill, as a Scope 3 category.'), 'wide'));
+    var AN={steel:'Steel',alu:'Aluminium',timber:'Plain timber',green:'Green waste',concrete:'Concrete',tyres:'Tyres'};
+    out.push(block('Avoided emissions, reported separately', table('Avoided-emissions factors',
+      [{t:'Material recovered'},{t:'Factor<br><span class="u">t CO₂-e avoided per tonne</span>',r:1}],
+      Object.keys(F.avoided).map(function(k){ return [esc(AN[k]||k), nf(F.avoided[k],2)]; }),
+      'NSW DECCW (2010), Environmental benefits of recycling. Flagged as dated. A modelled estimate, never deducted and never an offset.')));
+    var UN={mattress:['Mattress','Mattresses recovered'],tyre:['Tyre','Tyres recovered, and avoided emissions for tyres'],whitegood:['Whitegood','Whitegoods recovered']};
+    out.push(block('Default unit weights', table('Default unit weights',
+      [{t:'Item'},{t:'Weight<br><span class="u">kg each</span>',r:1},{t:'Used for'}],
+      Object.keys(F.unit).map(function(k){ var u=UN[k]||[k,'']; return [esc(u[0]), nf(F.unit[k]*1000,1).replace(/\.0$/,''), esc(u[1])]; }),
+      'Counts are converted to tonnes with these defaults unless the items are weighed.')));
+    set('factors', out.join(''));
+  }catch(e){}
+
+  try{
+    var skip={scope1_t:1,scope2_t:1,scope3_t:1,total_t:1,avoided_t:1};
+    set('rates', table('Rates and intensities calculated by YES',
+      [{t:'Figure'},{t:'Unit'},{t:'Calculation'}],
+      D.CALCS.filter(function(c){ return !skip[c.id]; }).map(function(c){ return [esc(c.name)+'<br><span class="id">'+esc(c.id)+'</span>', '<span class="u">'+esc(c.unit)+'</span>', '<span class="cx">'+esc(c.calc)+'</span>']; }),
+      'From the data dictionary. Per-resident figures apply to councils; per-m² and per-facility figures need the floor area and facility count in the profile.'));
+  }catch(e){}
+
+  try{
+    set('rules', table('How each category is scored',
+      [{t:'Category'},{t:'Rule'}],
+      E.SCORE_METHOD.map(function(x){ var c=D.CAT[x.k]||{name:x.k}; return [esc(c.name), esc(x.how)]; })));
+  }catch(e){}
+
+  try{
+    var segs=[], cur=null;
+    for(var s=0;s<=100;s++){ var b=E.band(s); if(!cur||cur.b!==b){ cur={b:b,from:s}; segs.push(cur); } }
+    segs.forEach(function(x,i){ x.to=i<segs.length-1?segs[i+1].from-1:100; });
+    set('bands', table('Score bands', [{t:'Band'},{t:'Score'}],
+      segs.slice().reverse().map(function(x,i,a){ return [esc(x.b), x.to===100?x.from+' and above':(x.from===0?'Below '+(x.to+1):x.from+' to '+x.to)]; })));
+  }catch(e){}
+
+  try{
+    var PN={}; D.PROFILE.forEach(function(p){ PN[p.id]=p; });
+    var USE={target_rehab_ha:'Land score',target_trees:'Nature score',target_native_ha:'Nature score',target_participants:'Community score'};
+    set('targets', table('Default targets', [{t:'Target'},{t:'Default',r:1},{t:'Unit'},{t:'Used in'}],
+      Object.keys(E.DEFAULT_TARGETS).map(function(k){ var p=PN[k]||{name:k,unit:''}; return [esc(p.name), nf(E.DEFAULT_TARGETS[k],0), '<span class="u">'+esc(p.unit||'')+'</span>', esc(USE[k]||'Shown against actual performance')]; })));
+  }catch(e){}
+
+  try{ if(E.CLAIMS){ f('c-avoided').textContent=E.CLAIMS.avoided; f('c-score').textContent=E.CLAIMS.score; } }catch(e){}
+})();
+</script>
+-->

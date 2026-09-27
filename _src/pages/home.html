@@ -1,0 +1,387 @@
+<link rel="stylesheet" href="{{R}}assets/css/pages.css?v=1">
+
+<!-- a. Hero -->
+<section class="hero home-hero">
+  <div class="bg" aria-hidden="true"><video data-bgv muted loop playsinline preload="none" poster="{{R}}assets/video/silver-720.webp"><source data-src="{{R}}assets/video/silver-720.mp4" type="video/mp4"></video></div>
+  <div class="wrap">
+    <p class="eyebrow">Yindyamarra Environmental Sustainability</p>
+    <h1>Your whole environmental performance, <span class="silver">reported every month.</span></h1>
+    <p class="lead">Councils enter the raw numbers once: litres, kilowatt-hours, kilolitres, tonnes and hectares. YES calculates the emissions, the percentages, the trends and the Yindyamarra Environmental Score.</p>
+    <div class="btn-row">
+      <a class="btn btn-primary" href="{{R}}portal/">Open the portal demo {{ARROW}}</a>
+      <a class="btn btn-ghost" href="mailto:{{EMAIL}}">Email us</a>
+    </div>
+    <dl class="facts">
+      <div><dt>Categories, one score</dt><dd data-n="cats">10</dd></div>
+      <div><dt>Mandatory figures each month</dt><dd data-n="req-m">9</dd></div>
+      <div><dt>Fields you can report</dt><dd data-n="inputs">98</dd></div>
+      <div><dt>Figures YES calculates</dt><dd data-n="calcs">25</dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- b. The ten categories -->
+<section class="sec sec-white" id="categories">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div><p class="eyebrow">Ten categories</p><h2>Ten categories, one picture</h2></div>
+      <p class="lead">Every number you report belongs to one of ten categories. Each category is scored on its own, and together they make the Yindyamarra Environmental Score.</p>
+    </div>
+    <ol class="cats colflow ul-reset reveal">
+      <li class="cat"><span class="i">01</span><h3>Energy &amp; Renewables</h3><p>Electricity, solar, batteries, gas and efficiency</p><p class="cc" data-cat-n="energy"><b>17</b> entered · <b>3</b> calculated</p></li>
+      <li class="cat"><span class="i">02</span><h3>Fleet &amp; Transport</h3><p>Fuels, vehicles, electric transition, kilometres and business travel</p><p class="cc" data-cat-n="fleet"><b>24</b> entered · <b>2</b> calculated</p></li>
+      <li class="cat"><span class="i">03</span><h3>Carbon &amp; Emissions</h3><p>Operational emissions calculated from everything else, and reductions</p><p class="cc" data-cat-n="carbon"><b>7</b> calculated, all from the other categories</p></li>
+      <li class="cat"><span class="i">04</span><h3>Water</h3><p>Consumption, reuse, harvesting and efficiency</p><p class="cc" data-cat-n="water"><b>7</b> entered · <b>4</b> calculated</p></li>
+      <li class="cat"><span class="i">05</span><h3>Waste &amp; Resource Recovery</h3><p>Recycling, landfill, materials and contamination</p><p class="cc" data-cat-n="waste"><b>25</b> entered · <b>6</b> calculated</p></li>
+      <li class="cat"><span class="i">06</span><h3>Circular Economy</h3><p>Reuse, recycled-content procurement and product stewardship</p><p class="cc" data-cat-n="circular"><b>6</b> entered · <b>1</b> calculated</p></li>
+      <li class="cat"><span class="i">07</span><h3>Land &amp; Soil</h3><p>Rehabilitation, remediation and soil reuse</p><p class="cc" data-cat-n="land"><b>4</b> entered</p></li>
+      <li class="cat"><span class="i">08</span><h3>Biodiversity &amp; Nature</h3><p>Vegetation, habitat, wetlands and trees</p><p class="cc" data-cat-n="nature"><b>9</b> entered</p></li>
+      <li class="cat"><span class="i">09</span><h3>Community &amp; Participation</h3><p>Programs, engagement and education</p><p class="cc" data-cat-n="community"><b>2</b> entered</p></li>
+      <li class="cat"><span class="i">10</span><h3>Governance &amp; Improvement</h3><p>Projects, investment, data quality and progress</p><p class="cc" data-cat-n="governance"><b>4</b> entered · <b>2</b> calculated</p></li>
+    </ol>
+    <p class="mt-3 reveal"><a class="link-go" href="{{R}}data-dictionary/">Every field in the data dictionary {{ARROW}}</a></p>
+  </div>
+</section>
+
+<!-- c. Raw numbers in, calculated figures out (worked with the YES engine v0.1) -->
+<section class="sec sec-dark" id="calculations">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div><p class="eyebrow">How it works</p><h2>Enter raw numbers. YES does the rest.</h2></div>
+      <p class="lead">You report what is on the bill, the docket or the register. YES applies the published factors and formulas, so every figure is calculated the same way, every month.</p>
+    </div>
+    <ul class="flow reveal" aria-label="Examples of raw numbers and the figures YES calculates from them">
+      <li class="flow-row">
+        <div class="in"><span class="fk">Fleet · fuel card statement</span><b>38,400 L</b> of diesel purchased</div>
+        <div class="arr" aria-hidden="true">{{ARROW}}</div>
+        <div class="out"><span class="sr-only">becomes </span><b>104.5 t CO₂-e</b> Scope 1 emissions<span class="fx">38,400 L ÷ 1,000 × 38.6 GJ/kL × 70.5 kg CO₂-e/GJ ÷ 1,000</span></div>
+      </li>
+      <li class="flow-row">
+        <div class="in"><span class="fk">Energy · retailer bills</span><b>612,000 kWh</b> of grid electricity in Victoria</div>
+        <div class="arr" aria-hidden="true">{{ARROW}}</div>
+        <div class="out"><span class="sr-only">becomes </span><b>471.2 t CO₂-e</b> Scope 2 emissions<span class="fx">612,000 kWh × 0.77 kg CO₂-e/kWh (VIC, location-based) ÷ 1,000</span></div>
+      </li>
+      <li class="flow-row">
+        <div class="in"><span class="fk">Fleet · fleet register</span><b>171 vehicles</b>: 45 diesel and 42 petrol passenger vehicles, 18 hybrids, 4 plug-in hybrids, 24 battery electric, 37 diesel trucks, 1 electric truck</div>
+        <div class="arr" aria-hidden="true">{{ARROW}}</div>
+        <div class="out"><span class="sr-only">becomes </span><b>15.8%</b> of the fleet electrified<span class="fx">(24 battery electric + 1 electric truck + ½ × 4 plug-in hybrids) ÷ 171 × 100</span></div>
+      </li>
+      <li class="flow-row">
+        <div class="in"><span class="fk">Waste · weighbridge dockets</span><b>3,480 t</b> of waste, <b>1,290 t</b> of it to landfill</div>
+        <div class="arr" aria-hidden="true">{{ARROW}}</div>
+        <div class="out"><span class="sr-only">becomes </span><b>62.9%</b> diverted from landfill<span class="fx">(3,480 t − 1,290 t) ÷ 3,480 t × 100</span><span class="fx">The landfill tonnes also give Scope 3: 1,290 t × 1.6 t CO₂-e/t = 2,064 t CO₂-e</span></div>
+      </li>
+      <li class="flow-row">
+        <div class="in"><span class="fk">Water · utility bills</span><b>19,500 kL</b> of potable water and <b>3,400 kL</b> of recycled water</div>
+        <div class="arr" aria-hidden="true">{{ARROW}}</div>
+        <div class="out"><span class="sr-only">becomes </span><b>14.8%</b> alternative water<span class="fx">3,400 kL ÷ (19,500 kL + 3,400 kL) × 100</span></div>
+      </li>
+      <li class="flow-row">
+        <div class="in"><span class="fk">Fleet · travel booking system</span><b>9</b> domestic and <b>1</b> international flight</div>
+        <div class="arr" aria-hidden="true">{{ARROW}}</div>
+        <div class="out"><span class="sr-only">becomes </span><b>10 trips</b> recorded <span class="pend">Factor pending</span><span class="fx">Not yet in the totals. Flights are converted once an emissions factor is adopted.</span></div>
+      </li>
+    </ul>
+    <div class="flow-note reveal">
+      <p class="note">Example month for a fictional Victorian council, calculated with the YES engine v0.1. Emissions factors are the National Greenhouse Accounts Factors 2024 (DCCEEW). Grid electricity is location-based, by state. Each number is entered once and feeds every figure that needs it: the same diesel litres also give upstream Scope 3 and fleet fuel efficiency.</p>
+      <p><a class="link-go" href="{{R}}method/#emissions">Every formula and factor in the method {{ARROW}}</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- d. Score preview: rendered live from the demo data by the script below; static values are the fallback -->
+<section class="sec sec-dark ink2" id="score-preview">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div><p class="eyebrow">The Yindyamarra Environmental Score</p><h2>One score out of 100, every month</h2></div>
+      <div>
+        <p class="lead">Ten category scores roll up into one monthly figure, with the direction of travel beside it. <span data-f="line">A council that moves from 55 to 69 in a year can show it.</span></p>
+      </div>
+    </div>
+    <div class="card-dark sp wide reveal" data-sp>
+      <div class="sp-head">
+        <div class="score-ring" style="--v:69" role="img" aria-label="Score 69 out of 100"><div class="in"><div class="v" data-f="score">69</div><div class="of">out of 100</div></div></div>
+        <div class="sp-meta">
+          <div><p class="kicker">Band</p><p class="sp-band" data-f="band">Strong</p></div>
+          <div><p class="kicker">Year on year</p><p class="sp-yoy" data-f="yoy">+14 points <span>since Jul 2025</span></p></div>
+          <div><p class="kicker">Coverage</p><p class="sp-cov" data-f="cov">10 of 10 categories scored</p></div>
+        </div>
+      </div>
+      <div class="subscores" data-f="subs">
+        <div class="sub"><div class="n">Energy</div><div class="v">71</div><div class="bar" aria-hidden="true"><i style="width:71%"></i></div></div>
+        <div class="sub"><div class="n">Fleet</div><div class="v">43</div><div class="bar" aria-hidden="true"><i style="width:43%"></i></div></div>
+        <div class="sub"><div class="n">Carbon</div><div class="v">76</div><div class="bar" aria-hidden="true"><i style="width:76%"></i></div></div>
+        <div class="sub"><div class="n">Water</div><div class="v">55</div><div class="bar" aria-hidden="true"><i style="width:55%"></i></div></div>
+        <div class="sub"><div class="n">Waste</div><div class="v">63</div><div class="bar" aria-hidden="true"><i style="width:63%"></i></div></div>
+        <div class="sub"><div class="n">Circularity</div><div class="v">39</div><div class="bar" aria-hidden="true"><i style="width:39%"></i></div></div>
+        <div class="sub"><div class="n">Land</div><div class="v">69</div><div class="bar" aria-hidden="true"><i style="width:69%"></i></div></div>
+        <div class="sub"><div class="n">Nature</div><div class="v">94</div><div class="bar" aria-hidden="true"><i style="width:94%"></i></div></div>
+        <div class="sub"><div class="n">Community</div><div class="v">84</div><div class="bar" aria-hidden="true"><i style="width:84%"></i></div></div>
+        <div class="sub"><div class="n">Governance</div><div class="v">99</div><div class="bar" aria-hidden="true"><i style="width:99%"></i></div></div>
+      </div>
+      <p class="sp-cap"><span class="tag-demo">Demo data</span><span data-f="cap">Demo Shire Council (fictional) · Jul 2026 · verified demo data</span></p>
+    </div>
+    <div class="flow-note reveal">
+      <p class="note">The score is self-declared under the published YES method. It is not an accredited rating.</p>
+      <p><a class="link-go" href="{{R}}score/">How the score works {{ARROW}}</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- e. Whole of council -->
+<section class="sec" id="whole-of-council">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div><p class="eyebrow">Whole of council</p><h2>The whole council, in one monthly report</h2></div>
+      <p class="lead">Not just the buildings. Every truck and mower, every facility, the waste service, the parks and the programs, reported in the units they are measured in.</p>
+    </div>
+    <div class="grid g3 woc">
+      <article class="card-silver reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5.5A1.5 1.5 0 0 1 5.5 4h6A1.5 1.5 0 0 1 13 5.5V21"/><path d="M2.5 21h12"/><path d="M6.5 8.5h4"/><path d="M13 10.5h1.5A1.5 1.5 0 0 1 16 12v4a1.5 1.5 0 0 0 3 0V8.5L16.5 6"/></svg></span>
+        <h3>Fuel</h3>
+        <p>Diesel and petrol litres purchased each month, from fuel card statements and bulk fuel invoices. LPG and biodiesel too.</p>
+        <div class="units"><span class="chip">L</span><span class="chip">Monthly</span></div>
+      </article>
+      <article class="card-silver reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16H2.5V6H13v10H9"/><path d="M13 9h3.8l3.2 3.4V16h-1.5"/><path d="M13 16h1.5"/><circle cx="7" cy="16.5" r="2"/><circle cx="16.5" cy="16.5" r="2"/></svg></span>
+        <h3>The fleet</h3>
+        <p>Diesel trucks, including waste and fire vehicles; petrol and diesel cars; hybrids, plug-in hybrids and battery electric. YES works out the electrification percentage.</p>
+        <div class="units"><span class="chip">Vehicles</span><span class="chip">Confirm when it changes</span></div>
+      </article>
+      <article class="card-silver reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 2.5 5 13.5h6.5l-1 8 8.5-11h-6.5z"/></svg></span>
+        <h3>Energy and solar</h3>
+        <p>Grid electricity from retailer bills, renewable purchases, solar generated, used onsite and exported, battery storage and natural gas.</p>
+        <div class="units"><span class="chip">kWh</span><span class="chip">kW</span><span class="chip">GJ</span></div>
+      </article>
+      <article class="card-silver reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2c-2.8 3.4-6 7.3-6 10.8a6 6 0 0 0 12 0c0-3.5-3.2-7.4-6-10.8z"/><path d="M9 14.5a3 3 0 0 0 3 3"/></svg></span>
+        <h3>Water</h3>
+        <p>Potable water from utility bills, plus recycled water, rainwater, stormwater, groundwater and wastewater reused.</p>
+        <div class="units"><span class="chip">kL</span><span class="chip">Monthly</span></div>
+      </article>
+      <article class="card-silver reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h17"/><path d="M9.5 6.5v-2h5v2"/><path d="M5.8 6.5 7 20h10l1.2-13.5"/><path d="M10 10.5v5.5M14 10.5v5.5"/></svg></span>
+        <h3>Waste</h3>
+        <p>Total waste, landfill and every recovered stream: recycling, organics, green waste, steel, concrete, e-waste, mattresses, tyres and more.</p>
+        <div class="units"><span class="chip">t</span><span class="chip">Units</span><span class="chip">kg</span></div>
+      </article>
+      <article class="card-silver reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 6.5 10H9l-3.5 5.5h13L15 10h2.5z"/><path d="M12 15.5V21"/><path d="M9 21h6"/></svg></span>
+        <h3>Trees and habitat</h3>
+        <p>Trees planted each month. Native vegetation, habitat and wetland restored, weeds managed and sites monitored each quarter.</p>
+        <div class="units"><span class="chip">Trees</span><span class="chip">ha</span></div>
+      </article>
+      <article class="card-silver reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19.5c0-3.2 2.4-5.5 5.5-5.5s5.5 2.3 5.5 5.5"/><path d="M15.5 5.3a2.8 2.8 0 0 1 0 5.4"/><path d="M17.2 14.3c2 .7 3.3 2.6 3.3 5.2"/></svg></span>
+        <h3>Community programs</h3>
+        <p>Environmental education sessions, workshops and community events, and the number of people who take part.</p>
+        <div class="units"><span class="chip">Events</span><span class="chip">People</span></div>
+      </article>
+      <article class="card-silver reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c.8 0 1.4.8 1.4 1.9V9.3l6.6 3.9v1.9l-6.6-2v4.4l1.9 1.5v1.6L12 19.6l-3.3 1V19l1.9-1.5v-4.4l-6.6 2v-1.9l6.6-3.9V4.4c0-1.1.6-1.9 1.4-1.9z"/></svg></span>
+        <h3>Flights</h3>
+        <p>Domestic and international trips taken for work, recorded each month. The emissions factor is pending, so flights are not yet in the totals.</p>
+        <div class="units"><span class="chip">Trips</span><span class="chip p">Factor pending</span></div>
+      </article>
+      <article class="card-silver reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4.5H6A1.5 1.5 0 0 0 4.5 6v13.5A1.5 1.5 0 0 0 6 21h12a1.5 1.5 0 0 0 1.5-1.5V6A1.5 1.5 0 0 0 18 4.5h-2"/><rect x="8" y="3" width="8" height="3.2" rx="1"/><path d="M8.5 11h7M8.5 15h4.5"/></svg></span>
+        <h3>Complaints and investment</h3>
+        <p>Environmental complaints and incidents received and closed, and spend on sustainability, recycling, renewable energy, restoration and improvement.</p>
+        <div class="units"><span class="chip">Cases</span><span class="chip">$</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- f. Monthly rhythm (counts from YESD.INPUTS; refreshed live by the script below) -->
+<section class="sec sec-white" id="rhythm">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div><p class="eyebrow">Reporting rhythm</p><h2>A monthly rhythm, not an annual scramble</h2></div>
+      <p class="lead">Most figures are reported monthly, while the bills are fresh. Quarterly and annual figures fall due at the end of the quarter and the financial year. Static details are set once and confirmed when they change.</p>
+    </div>
+    <div class="freqs">
+      <div class="freq reveal">
+        <h3>Monthly</h3>
+        <p class="n"><b data-n="freq-M">56</b><span>fields</span></p>
+        <p class="when">Every month. <span data-n="req-m">9</span> are mandatory for a complete month.</p>
+        <ul><li>Diesel purchased <span>L</span></li><li>Grid electricity consumed <span>kWh</span></li><li>Potable water consumed <span>kL</span></li><li>General waste to landfill <span>t</span></li><li>Trees planted <span>trees</span></li></ul>
+      </div>
+      <div class="freq reveal">
+        <h3>Quarterly</h3>
+        <p class="n"><b data-n="freq-Q">24</b><span>fields</span></p>
+        <p class="when">Reported in September, December, March and June.</p>
+        <ul><li>Land rehabilitated <span>ha</span></li><li>Recycled-content procurement spend <span>$</span></li><li>Waste contamination rate <span>%</span></li><li>Major water leaks repaired <span>leaks</span></li></ul>
+      </div>
+      <div class="freq reveal">
+        <h3>Annual</h3>
+        <p class="n"><b data-n="freq-A">3</b><span>fields</span></p>
+        <p class="when">Reported in June, at the end of the financial year.</p>
+        <ul><li>Streetlights converted to LED <span>%</span></li><li>Single-use products eliminated or reduced <span>categories</span></li><li>Native habitat created or protected <span>ha</span></li></ul>
+      </div>
+      <div class="freq reveal">
+        <h3>Static</h3>
+        <p class="n"><b data-n="freq-S">15</b><span>fields</span></p>
+        <p class="when">Set once. Confirm when it changes.</p>
+        <ul><li>Battery electric vehicles <span>vehicles</span></li><li>Diesel trucks <span>vehicles</span></li><li>Installed solar capacity <span>kW</span></li><li>Stewardship programs <span>programs</span></li></ul>
+      </div>
+    </div>
+    <div class="fy-wrap reveal">
+      <div class="fy-head"><h3>The financial year, July to June</h3><p class="meta">Fields that fall due each month</p></div>
+      <ol class="fy">
+        <li><span class="mo">Jul</span><span class="c" data-due="6">56</span><span class="tg"><span class="t m">M</span></span></li>
+        <li><span class="mo">Aug</span><span class="c" data-due="7">56</span><span class="tg"><span class="t m">M</span></span></li>
+        <li class="qe"><span class="mo">Sep</span><span class="c" data-due="8">80</span><span class="tg"><span class="t m">M</span><span class="t q">Q</span></span></li>
+        <li><span class="mo">Oct</span><span class="c" data-due="9">56</span><span class="tg"><span class="t m">M</span></span></li>
+        <li><span class="mo">Nov</span><span class="c" data-due="10">56</span><span class="tg"><span class="t m">M</span></span></li>
+        <li class="qe"><span class="mo">Dec</span><span class="c" data-due="11">80</span><span class="tg"><span class="t m">M</span><span class="t q">Q</span></span></li>
+        <li><span class="mo">Jan</span><span class="c" data-due="0">56</span><span class="tg"><span class="t m">M</span></span></li>
+        <li><span class="mo">Feb</span><span class="c" data-due="1">56</span><span class="tg"><span class="t m">M</span></span></li>
+        <li class="qe"><span class="mo">Mar</span><span class="c" data-due="2">80</span><span class="tg"><span class="t m">M</span><span class="t q">Q</span></span></li>
+        <li><span class="mo">Apr</span><span class="c" data-due="3">56</span><span class="tg"><span class="t m">M</span></span></li>
+        <li><span class="mo">May</span><span class="c" data-due="4">56</span><span class="tg"><span class="t m">M</span></span></li>
+        <li class="qe"><span class="mo">Jun</span><span class="c" data-due="5">83</span><span class="tg"><span class="t m">M</span><span class="t q">Q</span><span class="t a">A</span></span></li>
+      </ol>
+      <p class="fy-key"><span><span class="t m" aria-hidden="true">M</span> Monthly</span><span><span class="t q" aria-hidden="true">Q</span> Quarterly</span><span><span class="t a" aria-hidden="true">A</span> Annual</span><span>Static details are set in your first month and confirmed when they change.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- g. Evidence -->
+<section class="sec sec-silver" id="evidence">
+  <div class="wrap">
+    <div class="split">
+      <div class="reveal">
+        <p class="eyebrow">Evidence</p>
+        <h2>Every figure has a paper trail</h2>
+        <p class="lead mt-2">You enter the numbers and attach the bill, docket or register extract they came from. YES grades the evidence and verifies the month. Until then, the month is provisional.</p>
+        <ul class="grades">
+          <li><span class="grade A">A</span><div><b>Primary document</b><span class="d">A bill, docket or certificate.</span></div></li>
+          <li><span class="grade B">B</span><div><b>System extract or reconciled internal record</b><span class="d">A report from a finance, fleet or contractor system, or a register reconciled to source.</span></div></li>
+          <li><span class="grade C">C</span><div><b>Estimate or unsupported</b><span class="d">A reasonable estimate, or a figure without a document yet.</span></div></li>
+        </ul>
+        <p class="mt-3"><a class="link-go" href="{{R}}method/#evidence">How evidence is graded and verified {{ARROW}}</a></p>
+      </div>
+      <div class="reveal">
+        <div class="evc">
+          <div class="evc-h"><p class="t">Evidence for the month · Jul 2026</p><p class="meta">Example · fictional council</p></div>
+          <ul class="evc-list">
+            <li><span class="f">Grid electricity consumed <span class="fig">612,000 kWh</span></span><span class="doc"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 1.5H4A1.5 1.5 0 0 0 2.5 3v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V5.5z"/><path d="M9.5 1.5v4h4"/></svg>Retailer bills, July (PDF)</span><span class="grade A" aria-label="Grade A">A</span></li>
+            <li><span class="f">Diesel purchased <span class="fig">38,400 L</span></span><span class="doc"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 1.5H4A1.5 1.5 0 0 0 2.5 3v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V5.5z"/><path d="M9.5 1.5v4h4"/></svg>Fuel card statement, July (PDF)</span><span class="grade A" aria-label="Grade A">A</span></li>
+            <li><span class="f">Total waste generated <span class="fig">3,480 t</span></span><span class="doc"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 1.5H4A1.5 1.5 0 0 0 2.5 3v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V5.5z"/><path d="M9.5 1.5v4h4"/></svg>Contractor system extract (CSV)</span><span class="grade B" aria-label="Grade B">B</span></li>
+            <li><span class="f">Trees planted <span class="fig">420</span></span><span class="doc"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 11h.01"/></svg>Crew estimate, no record attached</span><span class="grade C" aria-label="Grade C">C</span></li>
+          </ul>
+          <ol class="steps" aria-label="Month status">
+            <li class="done"><b>Draft</b><span>You enter the month</span></li>
+            <li class="now" aria-current="step"><b>Submitted</b><span>Provisional until verified</span></li>
+            <li><b>Verified</b><span>YES has checked the evidence</span></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- h. Country -->
+<section class="sec sec-dark country" id="country">
+  <div class="bg" aria-hidden="true"><video data-bgv muted loop playsinline preload="none" poster="{{R}}assets/video/river-720.webp"><source data-src="{{R}}assets/video/river-720.mp4" type="video/mp4"></video></div>
+  <div class="wrap">
+    <div class="split rev">
+      <div class="reveal">
+        <p class="eyebrow">Country</p>
+        <h2>YES is built on caring for Country</h2>
+        <p class="lead">Every figure we report describes land, water and air in a real place. We treat those figures, and the places they describe, with care.</p>
+        <div class="name">
+          <p class="kicker">The name</p>
+          <p>Yindyamarra is a Wiradjuri word, often translated as respect, gentleness and taking responsibility. We will not use it at launch without the permission of Wiradjuri language custodians, and the meaning we publish will be the one they give us.</p>
+        </div>
+      </div>
+      <div class="ph-stack reveal">
+        <div class="ph film">
+          <p class="kicker">Film · to be commissioned</p>
+          <p>A film made with Traditional Owners about caring for Country — to be commissioned, paid for and approved by the people in it. We will not use stock or AI-generated footage of people here.</p>
+        </div>
+        <div class="ph mark">
+          <span class="blank" aria-hidden="true"></span>
+          <div><p class="kicker">Our mark</p><p>To be designed by an Aboriginal artist.</p></div>
+        </div>
+      </div>
+    </div>
+    <p class="ph-cap">The river footage behind this section is a placeholder ambient clip.</p>
+  </div>
+</section>
+
+<!-- i. Call to action -->
+<section class="sec tight cta">
+  <div class="wrap cta-in reveal">
+    <div>
+      <h2>See the portal with demo data</h2>
+      <p>A fictional council's months, evidence, calculations and score, in the prototype customer portal. Or email us about your organisation.</p>
+    </div>
+    <div class="btn-row">
+      <a class="btn btn-primary btn-lg" href="{{R}}portal/">Open the portal demo {{ARROW}}</a>
+      <a class="btn btn-ink btn-lg" href="mailto:{{EMAIL}}">{{EMAIL}}</a>
+    </div>
+  </div>
+</section>
+
+<!--SCRIPTS
+<script src="{{R}}assets/js/dictionary.js?v={{V}}"></script>
+<script src="{{R}}assets/js/engine.js?v={{V}}"></script>
+<script src="{{R}}assets/js/demo-data.js?v={{V}}"></script>
+<script>
+/* Home: refresh counts from the data dictionary, and render the score preview live from the demo data. */
+(function(){
+  var D=window.YESD, E=window.YESE, X=window.YESDEMO, d=document;
+  if(!D||!E) return;
+  function qa(s,c){ return [].slice.call((c||d).querySelectorAll(s)); }
+  function n(x){ return Number(x).toLocaleString('en-AU'); }
+  function put(k,v){ qa('[data-n="'+k+'"]').forEach(function(el){ el.textContent=v; }); }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  try{
+    var fq={M:0,Q:0,A:0,S:0};
+    D.INPUTS.forEach(function(f){ fq[f.freq]=(fq[f.freq]||0)+1; });
+    put('cats', n(D.CATEGORIES.length));
+    put('inputs', n(D.INPUTS.length));
+    put('calcs', n(D.CALCS.length));
+    put('req-m', n(D.INPUTS.filter(function(f){ return f.req && f.freq==='M'; }).length));
+    ['M','Q','A','S'].forEach(function(k){ put('freq-'+k, n(fq[k]||0)); });
+    qa('[data-due]').forEach(function(el){ el.textContent=n(D.due(+el.getAttribute('data-due'), false).length); });
+    qa('[data-cat-n]').forEach(function(el){
+      var k=el.getAttribute('data-cat-n');
+      var i=D.INPUTS.filter(function(f){ return f.cat===k; }).length, c=D.CALCS.filter(function(f){ return f.cat===k; }).length;
+      el.innerHTML=(!i&&c) ? '<b>'+c+'</b> calculated, all from the other categories' : [i?'<b>'+i+'</b> entered':'', c?'<b>'+c+'</b> calculated':''].filter(Boolean).join(' · ');
+    });
+  }catch(e){}
+
+  try{
+    if(!X) return;
+    var org=X.build().orgs['demo-shire'];
+    var S=E.series(org.records.filter(function(r){ return r.status==='verified'; }), org.profile);
+    var m=S.months[S.months.length-1]; if(!m||m.score==null) return;
+    var p=S.months.length>12 ? S.months[S.months.length-13] : null;
+    var box=d.querySelector('[data-sp]'); if(!box) return;
+    function f(k){ return box.querySelector('[data-f="'+k+'"]'); }
+    var ring=box.querySelector('.score-ring');
+    ring.style.setProperty('--v', m.score); ring.setAttribute('aria-label','Score '+m.score+' out of 100');
+    f('score').textContent=m.score;
+    f('band').textContent=m.band;
+    var y=f('yoy');
+    if(m.yoy==null||!p){ y.className='sp-yoy flat'; y.textContent='Needs 13 months of data'; }
+    else { y.className='sp-yoy'+(m.yoy<0?' down':m.yoy===0?' flat':''); y.innerHTML=(m.yoy>0?'+':m.yoy<0?'−':'±')+Math.abs(m.yoy)+' points <span>since '+esc(E.label(p.month))+'</span>'; }
+    f('cov').textContent=m.scored+' of '+D.CATEGORIES.length+' categories scored';
+    f('subs').innerHTML=D.CATEGORIES.map(function(c){
+      var v=m.scores[c.k];
+      if(v==null) return '<div class="sub nr"><div class="n" title="'+esc(c.name)+'">'+esc(c.short)+'</div><div class="v">—</div><div class="bar" aria-hidden="true"><i style="width:0"></i></div><span class="st">Not reported</span></div>';
+      var r=Math.round(v);
+      return '<div class="sub"><div class="n" title="'+esc(c.name)+'">'+esc(c.short)+'</div><div class="v">'+r+'</div><div class="bar" aria-hidden="true"><i style="width:'+r+'%"></i></div>'+(m.prov&&m.prov[c.k]?'<span class="st">Provisional</span>':'')+'</div>';
+    }).join('');
+    f('cap').textContent=org.profile.org_name+' (fictional) · '+E.label(m.month)+' · verified demo data';
+    var line=d.querySelector('[data-f="line"]');
+    if(line&&p&&p.score!=null){ line.textContent = m.score>p.score ? 'A council that moves from '+p.score+' to '+m.score+' in a year can show it.' : 'Over the year it moved from '+p.score+' to '+m.score+', and the report shows it either way.'; }
+  }catch(e){}
+})();
+</script>
+-->
