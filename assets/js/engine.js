@@ -130,6 +130,38 @@ window.YESE = window.YESE || {};
 
   function trend(now, base, band){ if(!(base>0) || now==null) return 50; var ch=(now-base)/base; return clamp(50 - ch/band*50); }
   E.band = function(s){ return s==null?"—":s>=80?"Leading":s>=65?"Strong":s>=50?"Developing":"Starting"; };
+  /* Category scores from one set of rolling 12-month measures. The monthly series, the score at target
+     and the potential score all go through this one function, so they can never disagree. */
+  E.scoreParts = function(x, T){
+    var h = x.has||{}, S = {};
+    S.energy = h.energy ? 0.6*clamp(x.renew_pct||0) + 0.4*trend(x.grid, x.grid_base, 0.20) : null;
+    S.fleet = h.fleet ? 0.6*clamp((x.ev_pct||0)/50*100) + 0.4*trend(x.fuel, x.fuel_base, 0.20) : null;
+    S.carbon = h.carbon ? trend(x.total, x.total_base, 0.30) : null;
+    S.water = h.water ? 0.5*clamp((x.alt_pct||0)/50*100) + 0.5*trend(x.potable, x.potable_base, 0.20) : null;
+    S.waste = x.diversion_pct==null ? null : 0.7*x.diversion_pct + 0.3*clamp(100-(x.contam_pct==null?10:x.contam_pct)*5);
+    S.circular = h.circular ? 0.5*clamp((x.proc_pct||0)/30*100) + 0.3*clamp((x.reuse_pct||0)/10*100) + 0.2*clamp((x.stew||0)/3*100) : null;
+    S.land = h.land ? clamp(x.rehab_ha/(T.target_rehab_ha*x.part)*100) : null;
+    S.nature = h.nature ? 0.5*clamp(x.trees/(T.target_trees*x.part)*100) + 0.5*clamp(x.native_ha/(T.target_native_ha*x.part)*100) : null;
+    S.community = h.community ? clamp(x.participants/(T.target_participants*x.part)*100) : null;
+    S.governance = 0.5*(x.complete||0) + 0.3*(x.evidence||0) + 0.2*(x.closure==null?100:x.closure);
+    return S;
+  };
+  E.overall = function(S){ var v=[]; D.CATEGORIES.forEach(function(c){ if(S[c.k]!=null) v.push(S[c.k]); }); return v.length ? Math.round(v.reduce(function(a,b){return a+b;},0)/v.length) : null; };
+  E.copyX = function(x){ var y={}; for(var k in x) y[k]=x[k]; y.has={}; for(var h in (x.has||{})) y.has[h]=x.has[h]; return y; };
+
+  /* The score if every target in the profile were met today. Measures without a target stay as they are. */
+  E.atTarget = function(m, T){
+    var x = E.copyX(m.x), p = x.part||1;
+    if(x.has.energy) x.renew_pct = Math.max(x.renew_pct||0, T.target_renewable);
+    if(x.has.fleet) x.ev_pct = Math.max(x.ev_pct||0, T.target_fleet_ev);
+    if(x.diversion_pct!=null) x.diversion_pct = Math.max(x.diversion_pct, T.target_diversion);
+    if(x.has.carbon && x.total_base>0) x.total = Math.min(x.total, x.total_base*(1 - T.target_emissions/100));
+    if(x.has.land) x.rehab_ha = Math.max(x.rehab_ha, T.target_rehab_ha*p);
+    if(x.has.nature){ x.trees = Math.max(x.trees, T.target_trees*p); x.native_ha = Math.max(x.native_ha, T.target_native_ha*p); }
+    if(x.has.community) x.participants = Math.max(x.participants, T.target_participants*p);
+    var S = E.scoreParts(x, T); return {scores:S, score:E.overall(S), x:x};
+  };
+
   function sumK(list,k){ return list.reduce(function(s,x){ return s + (x[k]||0); },0); }
   function avgK(list,k){ var xs=list.filter(function(x){return x[k]!=null;}); return xs.length? xs.reduce(function(s,x){return s+x[k];},0)/xs.length : null; }
 
@@ -146,7 +178,7 @@ window.YESE = window.YESE || {};
       var m = E.month(v, profile);
       m.month = r.month; m.values = v; m.status = r.status||"draft";
       var q = E.quality(r, i===0); m.complete_pct=q.complete_pct; m.evidence_pct=q.evidence_pct; m.q=q;
-      m.raw = rv;
+      m.raw = rv; m.ev = r.evidence||{};
       out.push(m);
     });
     // baseline: months in the baseline financial year, kept by calendar month so comparisons are seasonal
@@ -192,20 +224,25 @@ window.YESE = window.YESE || {};
       var part = R.n/12; // share of a year in the window: targets are pro-rated until 12 months exist
       m.r12 = R;
       function any(ids){ return w.some(function(x){ return ids.some(function(id){ return has(x.raw,id) || has(x.values,id); }); }); }
-      var S = {}, P = {};
-      // trend parts compare the window with the same calendar months of the baseline year
-      S.energy = any(["grid_kwh"]) ? 0.6*clamp(R.renew_pct||0) + 0.4*trend(R.grid_kwh, baseFor(w,"grid_kwh"), 0.20) : null;
-      S.fleet = any(["diesel_l","petrol_l","veh_petrol","veh_diesel"]) ? 0.6*clamp((m.fleet_ev_pct||0)/50*100) + 0.4*trend(R.fuel_l, baseFor(w,"fuel_l"), 0.20) : null;
-      S.carbon = R.total_t>0 ? trend(R.total_t, baseFor(w,"total_t"), 0.30) : null;
-      S.water = any(["potable_kl"]) ? 0.5*clamp((R.alt_water_pct||0)/50*100) + 0.5*trend(R.potable_kl, baseFor(w,"potable_kl"), 0.20) : null;
-      S.waste = R.diversion_pct==null ? null : 0.7*R.diversion_pct + 0.3*clamp(100-(lastContam==null?10:lastContam)*5);
       var stew = null; for(var s2=i;s2>=0;s2--){ if(has(out[s2].values,"stewardship")){ stew=+out[s2].values.stewardship; break; } }
-      S.circular = (any(["proc_total","furniture_t"]) || stew!=null) ? 0.5*clamp((R.proc_recycled_pct||0)/30*100) + 0.3*clamp((R.reuse_pct||0)/10*100) + 0.2*clamp((stew||0)/3*100) : null;
-      S.land = any(["rehab_ha","remediated_ha"]) ? clamp(R.rehab_ha/(T.target_rehab_ha*part)*100) : null;
-      S.nature = any(["trees","native_veg_ha","habitat_ha","wetland_ha"]) ? 0.5*clamp(R.trees/(T.target_trees*part)*100) + 0.5*clamp(R.native_ha/(T.target_native_ha*part)*100) : null;
-      S.community = any(["participants"]) ? clamp(R.participants/(T.target_participants*part)*100) : null;
       var recent = out.slice(Math.max(0,i-2), i+1);
-      S.governance = 0.5*(avgK(recent,"complete_pct")||0) + 0.3*(avgK(recent,"evidence_pct")||0) + 0.2*R.closure_pct;
+      // the measures the score is built from: kept on the month so the score at target and the potential score use the same inputs
+      var x = {
+        part: part,
+        has: { energy:any(["grid_kwh"]), fleet:any(["diesel_l","petrol_l","veh_petrol","veh_diesel"]), carbon:R.total_t>0, water:any(["potable_kl"]),
+               circular:(any(["proc_total","furniture_t"]) || stew!=null), land:any(["rehab_ha","remediated_ha"]), nature:any(["trees","native_veg_ha","habitat_ha","wetland_ha"]), community:any(["participants"]) },
+        renew_pct:R.renew_pct, grid:R.grid_kwh, grid_base:baseFor(w,"grid_kwh"),
+        ev_pct:m.fleet_ev_pct, fuel:R.fuel_l, fuel_base:baseFor(w,"fuel_l"),
+        total:R.total_t, total_base:baseFor(w,"total_t"),
+        alt_pct:R.alt_water_pct, potable:R.potable_kl, potable_base:baseFor(w,"potable_kl"),
+        diversion_pct:R.diversion_pct, contam_pct:lastContam,
+        proc_pct:R.proc_recycled_pct, reuse_pct:R.reuse_pct, stew:stew,
+        rehab_ha:R.rehab_ha, trees:R.trees, native_ha:R.native_ha, participants:R.participants,
+        complete:avgK(recent,"complete_pct"), evidence:avgK(recent,"evidence_pct"), closure:R.closure_pct,
+        s1_fleet:sumK(w,"scope1_fleet"), s2:R.scope2_t, waste_t:R.waste_total_t, landF:(E.FACTORS.landfill[profile.org_type]||1.3)
+      };
+      m.x = x;
+      var S = E.scoreParts(x, T), P = {};
       // provisional: target-based scores before a full year of data, and any month not yet verified by YES
       if(R.n<12){ ["land","nature","community"].forEach(function(c){ if(S[c]!=null) P[c]=true; }); }
       var vals = []; D.CATEGORIES.forEach(function(c){ if(S[c.k]!=null) vals.push(S[c.k]); });

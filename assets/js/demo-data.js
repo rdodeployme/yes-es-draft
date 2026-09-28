@@ -209,6 +209,20 @@ window.YESDEMO = window.YESDEMO || {};
     {id:"u-verify", name:"Chris Walker", title:"Verification lead · checks and verifies", email:"chris.walker@yes.example", role:"operator", org:null, home:"#/ops"}
   ];
 
+  /* Help booked from the roadmap. Demo Shire ran a hard-waste program in March 2026 and has a fleet session booked;
+     Demo Coastal has asked for a contamination blitz. */
+  X.BOOKINGS = [
+    {id:"bk-demo-1", org:"demo-shire", svc:"hardwaste", status:"completed", slot:"2026-03-12T09:00", other:false, mode:"On site", location:"Demo Shire depot",
+     contact:"Alex Morgan", email:"alex.morgan@demo-shire.example", notes:"Hard-waste collection week, including the mattresses and whitegoods stockpiled at the depot.", share:true,
+     month:"2026-01", group:true, createdAt:"2026-02-20T00:00:00.000Z", createdBy:"Alex Morgan", confirmedBy:"Chris Walker", completedMonth:"2026-03", completedBy:"Chris Walker", demo:true},
+    {id:"bk-demo-2", org:"demo-shire", svc:"fleet", status:"confirmed", slot:"2026-10-14T13:30", other:false, mode:"Online", location:"",
+     contact:"Alex Morgan", email:"alex.morgan@demo-shire.example", notes:"Please include the vehicles due for replacement in 2027.", share:true,
+     month:"2026-07", group:false, createdAt:"2026-09-02T00:00:00.000Z", createdBy:"Alex Morgan", confirmedBy:"Chris Walker", demo:true},
+    {id:"bk-demo-3", org:"demo-coastal", svc:"contamination", status:"requested", slot:"2026-10-07T09:00", other:false, mode:"On site", location:"Demo Coastal Council transfer station",
+     contact:"Sam Nguyen", email:"sam.nguyen@demo-coastal.example", notes:"Start with the streets that had the new glass bins.", share:true,
+     month:"2026-06", group:false, createdAt:"2026-09-18T00:00:00.000Z", createdBy:"Sam Nguyen", demo:true}
+  ];
+
   X.build = function(){
     var orgs = {};
     X.ORGS.forEach(function(o){
@@ -216,6 +230,7 @@ window.YESDEMO = window.YESDEMO || {};
       var recs = finish(build(g), g);
       orgs[o.id] = {id:o.id, profile:JSON.parse(JSON.stringify(o.profile)), records:recs, demo:true};
     });
-    return {v:2, created:new Date().toISOString(), orgs:orgs, users:X.USERS.slice(), session:null, audit:[]};
+    Object.keys(orgs).forEach(function(id){ orgs[id].plan = {off:{}}; });
+    return {v:3, created:new Date().toISOString(), orgs:orgs, users:X.USERS.slice(), session:null, audit:[], bookings:JSON.parse(JSON.stringify(X.BOOKINGS))};
   };
 })(window.YESDEMO, window.YESD, window.YESE);

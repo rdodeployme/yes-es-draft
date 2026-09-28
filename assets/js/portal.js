@@ -1,15 +1,17 @@
 /* YES customer portal prototype v0.1 (unlisted draft)
    A working static app: demo sign-in, monthly entry of raw figures, evidence, YES calculations,
    the Yindyamarra Environmental Score, printable monthly reports, export and import, and a YES
-   operator view for review and verification. All data stays in this browser (localStorage for
-   figures, IndexedDB for evidence files). Depends on dictionary.js, engine.js and demo-data.js. */
+   operator view for review and verification, recommended help with bookings, and a roadmap with
+   the score now, at the organisation's targets and with YES help. All data stays in this browser
+   (localStorage for figures and bookings, IndexedDB for evidence files).
+   Depends on dictionary.js, engine.js, demo-data.js and recommend.js. */
 (function(){
 'use strict';
-var D = window.YESD, E = window.YESE, X = window.YESDEMO;
-var KEY = 'yes-es-portal-v2';
+var D = window.YESD, E = window.YESE, X = window.YESDEMO, R = window.YESR;
+var KEY = 'yes-es-portal-v3';
 var app = document.getElementById('app');
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-var ui = { flash:null, flashT:null, loginTab:'customer', confirmSubmit:false, confirmReset:false, importPreview:null };
+var ui = { flash:null, flashT:null, loginTab:'customer', confirmSubmit:false, confirmReset:false, importPreview:null, bookSlot:null, confirmCancel:null };
 
 /* ------------------------------------------------------------------ utilities */
 function $(s,r){ return (r||document).querySelector(s); }
@@ -35,7 +37,7 @@ function field(id){ return D.FIELD[id] || (D.PROFILE.filter(function(f){return f
 
 /* ------------------------------------------------------------------ store */
 function load(){
-  try{ var s=JSON.parse(localStorage.getItem(KEY)); if(s && s.v===2 && s.orgs && s.users) return s; }catch(e){}
+  try{ var s=JSON.parse(localStorage.getItem(KEY)); if(s && s.v===3 && s.orgs && s.users){ s.bookings=s.bookings||[]; return s; } }catch(e){}
   var fresh = X.build(); persist(fresh); return fresh;
 }
 function persist(s){
@@ -76,25 +78,31 @@ function evKey(orgId,k,cat){ return orgId+'/'+k+'/'+cat; }
 /* ------------------------------------------------------------------ routing */
 function parseHash(){ var h=location.hash.replace(/^#\/?/,''); var q={}; var i=h.indexOf('?'); if(i>=0){ h.slice(i+1).split('&').forEach(function(p){ var kv=p.split('='); if(kv[0]) q[decodeURIComponent(kv[0])]=decodeURIComponent(kv[1]||''); }); h=h.slice(0,i); } return {parts:h.split('/').filter(Boolean), q:q}; }
 function go(h){ if(location.hash===h) render(); else location.hash=h; }
-window.addEventListener('hashchange', function(){ ui.confirmSubmit=false; ui.confirmReset=false; render(); window.scrollTo(0,0); });
+window.addEventListener('hashchange', function(){ ui.confirmSubmit=false; ui.confirmReset=false; ui.confirmCancel=null; ui.bookSlot=null; render(); window.scrollTo(0,0); });
 
 /* ------------------------------------------------------------------ small SVG charts */
 function lineChart(pts,o){
   o=o||{}; var W=o.w||720, H=o.h||220, pl=34, pr=10, pt=12, pb=26;
   var min=o.min!=null?o.min:0, max=o.max!=null?o.max:100;
   var n=pts.length; if(!n) return '';
+  var split=o.split!=null?Math.min(o.split,n-1):n-1;   // points after split are a projection, drawn dashed
   var x=function(i){ return pl + (n===1?0:(i*(W-pl-pr)/(n-1))); };
   var y=function(v){ return pt + (H-pt-pb)*(1-(v-min)/(max-min||1)); };
   var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(o.label||'Chart')+'">';
   if(o.band && o.band[1]>=o.band[0]){ var bx0=x(o.band[0])-(n>1?(W-pl-pr)/(n-1)/2:6), bx1=x(o.band[1])+(n>1?(W-pl-pr)/(n-1)/2:6); s+='<rect class="base" x="'+Math.max(pl,bx0)+'" y="'+pt+'" width="'+(Math.min(W-pr,bx1)-Math.max(pl,bx0))+'" height="'+(H-pt-pb)+'"/>'; if(o.bandLabel) s+='<text x="'+(Math.max(pl,bx0)+6)+'" y="'+(pt+13)+'">'+esc(o.bandLabel)+'</text>'; }
   (o.ticks||[0,25,50,75,100]).forEach(function(t){ s+='<line class="grid" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(t)+'" y2="'+y(t)+'"/><text x="'+(pl-8)+'" y="'+(y(t)+4)+'" text-anchor="end">'+t+'</text>'; });
+  (o.refs||[]).forEach(function(r){ if(r.v==null) return; s+='<line class="ref" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(r.v).toFixed(1)+'" y2="'+y(r.v).toFixed(1)+'"/><text class="ref-t" x="'+(pl+6)+'" y="'+(y(r.v)-6).toFixed(1)+'">'+esc(r.label)+'</text>'; });
   var step=Math.ceil(n/(o.maxLabels||9));
   pts.forEach(function(p,i){ if(i%step===0||i===n-1) s+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(p.label)+'</text>'; });
-  var d='', started=false;
-  pts.forEach(function(p,i){ if(p.v==null){ started=false; return; } d+=(started?'L':'M')+x(i).toFixed(1)+' '+y(p.v).toFixed(1); started=true; });
-  var col=o.color||'#4FC17A';
-  s+='<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>';
-  pts.forEach(function(p,i){ if(p.v==null) return; var last=i===n-1; s+='<circle cx="'+x(i)+'" cy="'+y(p.v)+'" r="'+(last?5:2.6)+'" fill="'+(p.prov?(o.dark?'#0D0E0E':'#FFFFFF'):col)+'" stroke="'+col+'" stroke-width="'+(p.prov?1.8:0)+'"><title>'+esc(p.label+': '+fmt(p.v,0)+(p.prov?' (provisional)':''))+'</title></circle>'; if(last) s+='<text x="'+(x(i)-8)+'" y="'+(y(p.v)-10)+'" text-anchor="end" style="font-weight:600;fill:'+(o.dark?'#FFFFFF':'#0B0B0B')+'">'+fmt(p.v,0)+'</text>'; });
+  var col=o.color||'#4FC17A', txt=o.dark?'#FFFFFF':'#0B0B0B';
+  function path(from,to){ var d='', started=false; for(var i=from;i<=to;i++){ var p=pts[i]; if(p.v==null){ started=false; continue; } d+=(started?'L':'M')+x(i).toFixed(1)+' '+y(p.v).toFixed(1); started=true; } return d; }
+  s+='<path d="'+path(0,split)+'" fill="none" stroke="'+col+'" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>';
+  if(split<n-1){
+    s+='<line class="now" x1="'+x(split).toFixed(1)+'" x2="'+x(split).toFixed(1)+'" y1="'+pt+'" y2="'+(H-pb)+'"/><text x="'+(x(split)+6).toFixed(1)+'" y="'+(H-pb-8)+'">Projected</text>';
+    s+='<path class="proj" d="'+path(split,n-1)+'" fill="none" stroke="'+col+'" stroke-width="2.4" stroke-dasharray="6 5" stroke-linejoin="round" stroke-linecap="round"/>';
+    var lp=pts[n-1]; if(lp.v!=null) s+='<circle cx="'+x(n-1)+'" cy="'+y(lp.v)+'" r="4.5" fill="'+(o.dark?'#0D0E0E':'#FFFFFF')+'" stroke="'+col+'" stroke-width="2"><title>'+esc(lp.label+': '+fmt(lp.v,0)+' (projected estimate)')+'</title></circle><text x="'+(x(n-1)-8)+'" y="'+(y(lp.v)-10)+'" text-anchor="end" style="font-weight:600;fill:'+txt+'">'+fmt(lp.v,0)+'</text>';
+  }
+  pts.forEach(function(p,i){ if(p.v==null||i>split) return; var last=i===split; s+='<circle cx="'+x(i)+'" cy="'+y(p.v)+'" r="'+(last?5:2.6)+'" fill="'+(p.prov?(o.dark?'#0D0E0E':'#FFFFFF'):col)+'" stroke="'+col+'" stroke-width="'+(p.prov?1.8:0)+'"><title>'+esc(p.label+': '+fmt(p.v,0)+(p.prov?' (provisional)':''))+'</title></circle>'; if(last) s+='<text x="'+(x(i)-8)+'" y="'+(y(p.v)-10)+'" text-anchor="end" style="font-weight:600;fill:'+txt+'">'+fmt(p.v,0)+'</text>'; });
   return s+'</svg>';
 }
 function spark(vals,o){
@@ -129,12 +137,14 @@ function shell(active, body){
       ['grp','YES team'],
       ['#/ops/entry','Data entry','entry', entryQueue().length||''],
       ['#/ops','Verification','ops', queue().length||''],
+      ['#/ops/bookings','Bookings','bookings', (state.bookings||[]).filter(function(b){ return b.status==='requested'; }).length||''],
       ['#/ops/customers','Customers','customers'],
       ['#/ops/factors','Factor library','factors'],
       ['#/ops/activity','Activity','activity'],
       ['grp','Viewing '+(o?o.profile.org_name:'')],
       ['#/dashboard','Dashboard','dashboard'],
       ['#/reports','Reports','reports'],
+      ['#/roadmap','Roadmap and help','roadmap'],
       ['#/documents','Documents','documents'],
       ['#/organisation','Organisation','organisation'],
       ['#/data','Data and export','data']
@@ -142,6 +152,7 @@ function shell(active, body){
       ['grp','Reporting'],
       ['#/dashboard','Dashboard','dashboard'],
       ['#/reports','Reports','reports'],
+      ['#/roadmap','Roadmap and help','roadmap'],
       ['#/documents','Send documents','documents'],
       ['grp','Account'],
       ['#/organisation','Organisation','organisation'],
@@ -156,7 +167,7 @@ function shell(active, body){
    + '<nav class="snav">'+nav+'</nav>'
    + '<div class="foot">Prototype. Your data stays in this browser.<br><button class="btn btn-ghost btn-sm" type="button" data-act="signout" style="color:var(--silver-2)">Sign out</button></div>'
    + '</aside><main class="main" id="main"><div class="content">'
-   + (op && ['dashboard','reports','documents','organisation','category','report','data'].indexOf(active)>=0 ? '<div class="banner grey no-print"><span>Viewing <b>'+esc(o.profile.org_name)+'</b> as the YES team. The customer sees verified months only; months waiting for verification show here as provisional.</span><a class="btn btn-ghost btn-sm" href="#/ops/customers">Switch customer</a></div>' : '')
+   + (op && ['dashboard','reports','roadmap','documents','organisation','category','report','data'].indexOf(active)>=0 ? '<div class="banner grey no-print"><span>Viewing <b>'+esc(o.profile.org_name)+'</b> as the YES team. The customer sees verified months only; months waiting for verification show here as provisional.</span><a class="btn btn-ghost btn-sm" href="#/ops/customers">Switch customer</a></div>' : '')
    + body + '</div></main></div>';
 }
 
@@ -179,7 +190,7 @@ function vLogin(){
 function vDashboard(q){
   var o=org(), S=seriesOf(o), m=monthOf(S,q.m);
   if(!m) return shell('dashboard','<div class="pg-head"><div><h1>'+esc(o.profile.org_name)+'</h1></div></div><div class="empty">'+(isOp()?'No month has been verified or entered yet. <a class="link" href="#/ops/entry">Open data entry</a>.':'Your first verified month will appear here. <a class="link" href="#/documents">Send your documents</a> and YES will enter them.')+'</div>');
-  var i=idxOf(S,m.month), R=m.r12, T=S.targets, p=o.profile;
+  var i=idxOf(S,m.month), R12=m.r12, T=S.targets, p=o.profile;
   var opts = S.months.slice().reverse().map(function(x){ return '<option value="'+x.month+'"'+(x.month===m.month?' selected':'')+'>'+mLabel(x.month)+(x.status!=='verified'?' · provisional':'')+'</option>'; }).join('');
   var head = '<div class="pg-head"><div><p class="kicker">Dashboard</p><h1>'+esc(p.org_name)+'</h1><p class="pg-sub">'+esc(p.org_type)+' · '+esc(p.state)+(p.residents?' · '+fmt(p.residents)+' residents':'')+' · '+fmt(p.employees)+' FTE · baseline '+esc(p.baseline_fy)+'</p></div>'
     + '<div class="pg-actions"><label class="vh" for="dm">Month</label><select id="dm" data-act="dash-month">'+opts+'</select><a class="btn btn-ink btn-sm" href="#/report/'+m.month+'">Monthly report</a></div></div>';
@@ -205,19 +216,26 @@ function vDashboard(q){
     + '<div class="dl"><span>Year on year</span><b>'+yoyTxt+'</b><span>Month on month</span><b>'+(momTxt||'—')+'</b><span>Status</span><b>'+statusChip(m.status)+'</b><span>Coverage</span><b>'+m.scored+' of 10 categories</b></div>'
     + '<p class="small" style="color:var(--silver-5);margin:14px 0 0;max-width:40ch">'+esc(stTxt)+'. Self-declared under the published YES method; not an accredited rating.</p></div></div>'
     + '<div class="dh-chart">'+lineChart(basePts,{dark:true,label:'Score by month',band:bIdx.length?[bIdx[0],bIdx[bIdx.length-1]]:null,bandLabel:bIdx.length?'Baseline '+S.baseline.fy:'',h:230})+'</div></div></section>';
+  // where you could be, and recommended help
+  var P=planFor(o,S,i), help='';
+  if(P){
+    var top3=P.items.filter(function(it){ return it.k!=='grants' && !it.off; }).slice(0,3);
+    help='<section class="wyc no-print" aria-labelledby="wyc-h"><div class="wyc-top"><div><h2 class="sec-t" id="wyc-h">Where you could be</h2><p class="sec-s">Your score now, at your own targets, and an estimate with the recommended help done.</p></div><a class="btn btn-ghost btn-sm" href="#/roadmap" style="color:var(--ink)">See your roadmap</a></div>'+threeNums(P,m)
+      + (top3.length?'<h2 class="sec-t" style="margin-top:26px">Recommended for you</h2><p class="sec-s">From your figures to '+mLabel(m.month)+', by the published rules. You can use any provider.</p><div class="recs">'+top3.map(recCard).join('')+'</div>':'')+'</section>';
+  }
   // tiles
   var tiles = '<section><h2 class="sec-t" style="margin-top:28px">Ten categories</h2><p class="sec-s">Rolling 12 months to '+mLabel(m.month)+'. Change is against the same month last year. Select a category for its figures.</p><div class="tiles">'
     + D.CATEGORIES.map(function(c){ var v=m.scores[c.k]; var hist=S.months.slice(Math.max(0,i-12),i+1).map(function(x){ return x.scores[c.k]; }); return '<a class="tile" href="#/category/'+c.k+'?m='+m.month+'"><div class="n">'+esc(c.short)+'</div>'+(v==null?'<div class="v na">Not reported</div>':'<div class="v">'+Math.round(v)+' '+delta(m.cat_yoy[c.k])+'</div>'+spark(hist,{min:0,max:100}))+(m.prov[c.k]?'<span class="prov" title="Provisional until 12 months of data">P</span>':'')+'</a>'; }).join('')
     + '</div></section>';
   // emissions
-  var tot=R.total_t, base=R.base.total_t, chg=base>0?(tot-base)/base*100:null;
-  var s1=R.scope1_t/tot*100, s2=R.scope2_t/tot*100, s3=R.scope3_t/tot*100;
+  var tot=R12.total_t, base=R12.base.total_t, chg=base>0?(tot-base)/base*100:null;
+  var s1=R12.scope1_t/tot*100, s2=R12.scope2_t/tot*100, s3=R12.scope3_t/tot*100;
   var last13=S.months.slice(Math.max(0,i-12),i+1).map(function(x){ return {label:mShort(x.month), parts:[x.scope1_t,x.scope2_t,x.scope3_t]}; });
   var emis = '<div class="panel"><div class="metric"><div class="k">Operational emissions · rolling 12 months</div><div class="v">'+fmt(tot,0)+'<span class="u">t CO₂-e</span></div><div class="s">'+(chg!=null?delta(chg,{lowerBetter:true,dp:1,unit:'%'})+' against the same months of the baseline year':'')+'</div></div>'
     + '<div class="split-bar" aria-hidden="true"><i class="s1" style="width:'+s1+'%"></i><i class="s2" style="width:'+s2+'%"></i><i class="s3" style="width:'+s3+'%"></i></div>'
-    + '<div class="legend"><span><i class="s1"></i>Scope 1 · '+fmt(R.scope1_t,0)+' t</span><span><i class="s2"></i>Scope 2 · '+fmt(R.scope2_t,0)+' t</span><span><i class="s3"></i>Scope 3 (reported categories) · '+fmt(R.scope3_t,0)+' t</span></div>'
+    + '<div class="legend"><span><i class="s1"></i>Scope 1 · '+fmt(R12.scope1_t,0)+' t</span><span><i class="s2"></i>Scope 2 · '+fmt(R12.scope2_t,0)+' t</span><span><i class="s3"></i>Scope 3 (reported categories) · '+fmt(R12.scope3_t,0)+' t</span></div>'
     + '<div style="margin-top:16px">'+stackBars(last13,{colors:['#0E4424','#1D7A43','#7FD6A0'],names:['Scope 1','Scope 2','Scope 3'],unit:'t CO₂-e',label:'Emissions by month',h:190})+'</div>'
-    + '<p class="small muted" style="margin:10px 0 0">Avoided emissions from recycling, reported separately and never deducted: <b>'+fmt(R.avoided_t,0)+' t CO₂-e</b> (modelled estimate). '+(R.flights?'':'')+'Flights are recorded but not yet in the totals.</p></div>';
+    + '<p class="small muted" style="margin:10px 0 0">Avoided emissions from recycling, reported separately and never deducted: <b>'+fmt(R12.avoided_t,0)+' t CO₂-e</b> (modelled estimate). '+(R12.flights?'':'')+'Flights are recorded but not yet in the totals.</p></div>';
   // targets
   var tg = E.targets(S.months.length ? {months:S.months.slice(0,i+1), targets:T, baseline:S.baseline} : S);
   var targ = '<div class="panel"><h3>Targets and actuals</h3><p class="sec-s" style="margin-top:4px">Rolling 12 months to '+mLabel(m.month)+'. Targets are set on the Organisation page.</p>'
@@ -225,19 +243,19 @@ function vDashboard(q){
     + '<p class="small muted" style="margin:16px 0 0">The black mark is the target.'+(tg[0]&&tg[0].note?' Emissions: '+esc(tg[0].note.toLowerCase())+'.':'')+'</p></div>';
   // key metrics
   function mc(k,v,u,s){ return '<div class="panel metric"><div class="k">'+k+'</div><div class="v">'+v+(u?'<span class="u">'+u+'</span>':'')+'</div><div class="s">'+s+'</div></div>'; }
-  var fuelChg = R.base.fuel_l>0 ? (R.fuel_l-R.base.fuel_l)/R.base.fuel_l*100 : null;
-  var elecChg = R.base.grid_kwh>0 ? (R.grid_kwh-R.base.grid_kwh)/R.base.grid_kwh*100 : null;
-  var watChg = R.base.potable_kl>0 ? (R.potable_kl-R.base.potable_kl)/R.base.potable_kl*100 : null;
+  var fuelChg = R12.base.fuel_l>0 ? (R12.fuel_l-R12.base.fuel_l)/R12.base.fuel_l*100 : null;
+  var elecChg = R12.base.grid_kwh>0 ? (R12.grid_kwh-R12.base.grid_kwh)/R12.base.grid_kwh*100 : null;
+  var watChg = R12.base.potable_kl>0 ? (R12.potable_kl-R12.base.potable_kl)/R12.base.potable_kl*100 : null;
   var metrics = '<section><h2 class="sec-t" style="margin-top:28px">Key figures</h2><p class="sec-s">Rolling 12 months to '+mLabel(m.month)+', calculated by YES from the figures you entered.</p><div class="row3">'
-    + mc('Renewable electricity',pct(R.renew_pct,1),'','Target '+fmt(T.target_renewable,0)+'% · purchased renewables and solar used on site')
+    + mc('Renewable electricity',pct(R12.renew_pct,1),'','Target '+fmt(T.target_renewable,0)+'% · purchased renewables and solar used on site')
     + mc('Fleet electrification',pct(m.fleet_ev_pct,1),'',fmt(m.fleet_n,0)+' vehicles · target '+fmt(T.target_fleet_ev,0)+'%')
-    + mc('Landfill diversion',pct(R.diversion_pct,1),'','Recovery rate '+pct(R.recovery_pct,1)+' · target '+fmt(T.target_diversion,0)+'%')
-    + mc('Fuel purchased',fmt(R.fuel_l/1000,0),'kL',delta(fuelChg,{lowerBetter:true,dp:1,unit:'%'})+' on the baseline months')
-    + mc('Grid electricity',fmt(R.grid_kwh/1000,0),'MWh',delta(elecChg,{lowerBetter:true,dp:1,unit:'%'})+' on the baseline months')
-    + mc('Potable water',fmt(R.potable_kl,0),'kL',delta(watChg,{lowerBetter:true,dp:1,unit:'%'})+' · alternative water '+pct(R.alt_water_pct,1))
-    + mc('Trees planted',fmt(R.trees,0),'','Target '+fmt(T.target_trees,0)+' a year')
-    + mc('Habitat restored',fmt(R.native_ha,1),'ha','Native vegetation, habitat and wetland · target '+fmt(T.target_native_ha,0)+' ha')
-    + mc('Program participants',fmt(R.participants,0),'','Target '+fmt(T.target_participants,0)+' a year')
+    + mc('Landfill diversion',pct(R12.diversion_pct,1),'','Recovery rate '+pct(R12.recovery_pct,1)+' · target '+fmt(T.target_diversion,0)+'%')
+    + mc('Fuel purchased',fmt(R12.fuel_l/1000,0),'kL',delta(fuelChg,{lowerBetter:true,dp:1,unit:'%'})+' on the baseline months')
+    + mc('Grid electricity',fmt(R12.grid_kwh/1000,0),'MWh',delta(elecChg,{lowerBetter:true,dp:1,unit:'%'})+' on the baseline months')
+    + mc('Potable water',fmt(R12.potable_kl,0),'kL',delta(watChg,{lowerBetter:true,dp:1,unit:'%'})+' · alternative water '+pct(R12.alt_water_pct,1))
+    + mc('Trees planted',fmt(R12.trees,0),'','Target '+fmt(T.target_trees,0)+' a year')
+    + mc('Habitat restored',fmt(R12.native_ha,1),'ha','Native vegetation, habitat and wetland · target '+fmt(T.target_native_ha,0)+' ha')
+    + mc('Program participants',fmt(R12.participants,0),'','Target '+fmt(T.target_participants,0)+' a year')
     + '</div></section>';
   // fleet
   var v=m.values, fleet=[['Diesel cars',v.veh_diesel,'lg-ice'],['Petrol cars',v.veh_petrol,'lg-petrol'],['Hybrids',v.veh_hybrid,'lg-hyb'],['Plug-in hybrids',v.veh_phev,'lg-phev'],['Battery electric',v.veh_bev,'lg-bev'],['Diesel trucks',v.trucks_diesel,'lg-truck'],['Electric trucks',v.trucks_electric,'lg-etruck']];
@@ -253,7 +271,7 @@ function vDashboard(q){
   var qual = '<div class="panel"><h3>Data quality · '+mLabel(m.month)+'</h3><dl class="kv" style="margin-top:14px"><dt>Required figures supplied</dt><dd>'+pct(m.complete_pct,0)+'</dd><dt>Figures backed by evidence</dt><dd>'+pct(m.evidence_pct,0)+'</dd><dt>Entered by YES</dt><dd>'+longDate(r.enteredAt||r.submittedAt)+'</dd><dt>Verified by YES</dt><dd>'+(r.verifiedAt?longDate(r.verifiedAt):'Not yet')+'</dd></dl>'
     + '<div class="pill-row" style="margin-top:16px">'+D.CATEGORIES.filter(function(c){ return c.k!=='carbon'; }).map(function(c){ var e=ev[c.k]; var g=e&&e.grade?e.grade:(e?'…':'—'); return '<span class="chip" title="'+esc(e?(e.name||''):'No evidence attached')+'"><span class="grade '+(e&&e.grade?e.grade:'none')+'" style="width:20px;height:20px;font-size:11px">'+g+'</span>'+esc(c.short)+'</span>'; }).join('')+'</div>'
     + '<p class="small muted" style="margin:12px 0 0">Evidence grades: A primary document (bill, docket, certificate) · B system extract or reconciled record · C estimate or unsupported · … awaiting YES.</p></div>';
-  return shell('dashboard', head + banner + hero + tiles + '<div class="row2" style="margin-top:28px">'+emis+targ+'</div>' + metrics + '<div class="row2" style="margin-top:22px">'+fleetP+qual+'</div>');
+  return shell('dashboard', head + banner + hero + help + tiles + '<div class="row2" style="margin-top:28px">'+emis+targ+'</div>' + metrics + '<div class="row2" style="margin-top:22px">'+fleetP+qual+'</div>');
 }
 
 /* ------------------------------------------------------------------ category detail */
@@ -405,7 +423,8 @@ function vReports(){
 
 function vReport(k){
   var o=org(), S=seriesOf(o), m=monthOf(S,k); if(!m||m.month!==k) return vNotFound();
-  var i=idxOf(S,k), R=m.r12, p=o.profile, r=rec(o,k), T=S.targets;
+  var i=idxOf(S,k), R12=m.r12, p=o.profile, r=rec(o,k), T=S.targets;
+  var PL=planFor(o,S,i), nP=PL?3:2;
   var ly=S.months[i-12]||null, pm=S.months[i-1]||null;
   var pts=S.months.slice(Math.max(0,i-12),i+1).map(function(x){ return {label:mShort(x.month), v:x.score, prov:x.status!=='verified'}; });
   var provTxt = m.status==='verified' ? 'Verified by YES on '+longDate(r.verifiedAt) : 'Provisional · awaiting YES verification';
@@ -419,25 +438,175 @@ function vReport(k){
     + '<div class="rp-h">Direction of travel · last 13 months</div>'+lineChart(pts,{label:'Score, last 13 months',h:170})
     + '<div class="rp-h">Category scores · change on last year</div><div class="rp-subs">'+subs+'</div>'
     + '<div class="rp-h">Targets and actuals · rolling 12 months</div><div class="rp-tw"><table class="tbl compact"><tbody>'+tg.map(function(t){ return '<tr><td>'+esc(t.name)+'</td><td class="num">'+(t.actual==null?'—':fmt(t.actual,1)+'%')+'</td><td class="num muted">target '+fmt(t.target,0)+'%</td></tr>'; }).join('')+'</tbody></table></div>'
-    + '<div class="rp-foot">(P) provisional: a target-based category with less than 12 months of data. The score is self-declared under the published YES method v0.1 (draft); it is not an accredited rating, certification or offset. Page 1 of 2.</div></section>';
+    + '<div class="rp-foot">(P) provisional: a target-based category with less than 12 months of data. The score is self-declared under the published YES method v0.1 (draft); it is not an accredited rating, certification or offset. Page 1 of '+nP+'.</div></section>';
   var sheet2 = '<section class="rp-sheet"><div class="rp-head"><div><div class="rp-title" style="font-size:22px">'+esc(p.org_name)+' · '+mLabel(k)+'</div></div><div class="rp-kv"><span>Report</span><b>Figures behind the score</b></div></div>'
     + '<div class="rp-h" style="margin-top:0">Emissions · t CO₂-e</div><div class="rp-tw"><table class="tbl compact"><thead><tr><th></th><th class="r">'+mShort(k)+'</th><th class="r">Rolling 12 months</th><th class="r">Baseline months</th></tr></thead><tbody>'
-    + [['Scope 1 · fuel and gas','scope1_t'],['Scope 2 · grid electricity','scope2_t'],['Scope 3 · landfill and upstream','scope3_t'],['Total operational emissions','total_t']].map(function(x){ return '<tr><td>'+x[0]+'</td><td class="num">'+fmt(m[x[1]],1)+'</td><td class="num">'+fmt(R[x[1]],0)+'</td><td class="num">'+fmt(R.base[x[1]],0)+'</td></tr>'; }).join('')
-    + '<tr><td>Avoided emissions · reported separately, never deducted</td><td class="num">'+fmt(m.avoided_t,1)+'</td><td class="num">'+fmt(R.avoided_t,0)+'</td><td></td></tr></tbody></table></div>'
+    + [['Scope 1 · fuel and gas','scope1_t'],['Scope 2 · grid electricity','scope2_t'],['Scope 3 · landfill and upstream','scope3_t'],['Total operational emissions','total_t']].map(function(x){ return '<tr><td>'+x[0]+'</td><td class="num">'+fmt(m[x[1]],1)+'</td><td class="num">'+fmt(R12[x[1]],0)+'</td><td class="num">'+fmt(R12.base[x[1]],0)+'</td></tr>'; }).join('')
+    + '<tr><td>Avoided emissions · reported separately, never deducted</td><td class="num">'+fmt(m.avoided_t,1)+'</td><td class="num">'+fmt(R12.avoided_t,0)+'</td><td></td></tr></tbody></table></div>'
     + '<div class="rp-h">Key figures</div><div class="rp-tw"><table class="tbl compact"><thead><tr><th>Figure</th><th class="r">'+mShort(k)+'</th><th>Unit</th><th>Note</th></tr></thead><tbody>'
     + kvrow('Diesel purchased',fmt(v.diesel_l),'L') + kvrow('Petrol purchased',fmt(v.petrol_l),'L') + kvrow('Fleet kilometres',fmt(v.fleet_km),'km',m.fleet_eff==null?'':fmt(m.fleet_eff,1)+' L/100 km')
     + kvrow('Fleet electrification',pct(m.fleet_ev_pct,1),'',fmt(m.fleet_n)+' vehicles; plug-in hybrids count as half')
     + kvrow('Flights',fmt(m.flights),'trips','Recorded; emissions factor pending')
-    + kvrow('Grid electricity',fmt(v.grid_kwh),'kWh') + kvrow('Renewable electricity',pct(m.renew_pct,1),'',pct(R.renew_pct,1)+' over 12 months') + kvrow('Natural gas',fmt(v.gas_gj,1),'GJ')
+    + kvrow('Grid electricity',fmt(v.grid_kwh),'kWh') + kvrow('Renewable electricity',pct(m.renew_pct,1),'',pct(R12.renew_pct,1)+' over 12 months') + kvrow('Natural gas',fmt(v.gas_gj,1),'GJ')
     + kvrow('Potable water',fmt(v.potable_kl),'kL','Alternative water '+pct(m.alt_water_pct,1))
     + kvrow('Total waste',fmt(v.waste_total_t,1),'t','Landfill '+fmt(v.landfill_t,1)+' t') + kvrow('Landfill diversion',pct(m.diversion_pct,1),'','Recovery '+pct(m.recovery_pct,1))
     + kvrow('Trees planted',fmt(v.trees),'trees') + kvrow('Program participants',fmt(v.participants),'people')
     + '</tbody></table></div>'
     + '<div class="rp-h">Data quality and evidence</div><div class="rp-tw"><table class="tbl compact"><tbody><tr><td>Required figures supplied</td><td class="num">'+pct(m.complete_pct)+'</td></tr><tr><td>Figures backed by evidence</td><td class="num">'+pct(m.evidence_pct)+'</td></tr><tr><td>Evidence grades</td><td>'+D.CATEGORIES.filter(function(c){return c.k!=='carbon';}).map(function(c){ var e=(r.evidence||{})[c.k]; return esc(c.short)+' '+(e?(e.grade||'…'):'—'); }).join(' · ')+'</td></tr></tbody></table></div>'
-    + '<div class="rp-foot">Method: emissions use the National Greenhouse Accounts Factors 2024 (DCCEEW), location-based electricity for '+esc(p.state)+'. Scope 3 covers waste to landfill and upstream fuel and electricity only. Flights are recorded but not yet converted. Avoided emissions use NSW DECCW (2010) factors, flagged as dated, and are never netted against emissions. Comparisons with the baseline use the same calendar months of '+esc(S.baseline.fy||p.baseline_fy)+'. Figures are entered by YES from the organisation\'s source documents and verified by a second YES analyst. Full method: yes.com.au/method. Page 2 of 2.</div></section>';
+    + '<div class="rp-foot">Method: emissions use the National Greenhouse Accounts Factors 2024 (DCCEEW), location-based electricity for '+esc(p.state)+'. Scope 3 covers waste to landfill and upstream fuel and electricity only. Flights are recorded but not yet converted. Avoided emissions use NSW DECCW (2010) factors, flagged as dated, and are never netted against emissions. Comparisons with the baseline use the same calendar months of '+esc(S.baseline.fy||p.baseline_fy)+'. Figures are entered by YES from the organisation\'s source documents and verified by a second YES analyst. Full method: yes.com.au/method. Page 2 of '+nP+'.</div></section>';
   var body='<div class="pg-head no-print"><div><p class="kicker"><a class="link" href="#/reports">Reports</a></p><h1>'+mLabel(k)+'</h1></div><div class="pg-actions"><button class="btn btn-ink btn-sm" type="button" data-act="print">Print or save as PDF</button><button class="btn btn-ghost btn-sm" type="button" data-act="csv-month" data-month="'+k+'" style="color:var(--ink)">Download figures (CSV)</button></div></div>'
-    + '<div class="report">'+sheet1+sheet2+'</div>';
+    + '<div class="report">'+sheet1+sheet2+(PL?sheet3(o,S,i,PL,k):'')+'</div>';
   return shell('report', body);
+}
+
+/* ------------------------------------------------------------------ recommended help, roadmap and bookings */
+function orgBookings(id){ return (state.bookings||[]).filter(function(b){ return b.org===id; }); }
+function bkById(id){ return (state.bookings||[]).filter(function(b){ return b.id===id; })[0]; }
+/* work can start the month after the report month, and never before next month */
+function anchorFor(k){ var a=E.addMonths(k,1), b=E.addMonths(nowKey(),1); return a>b?a:b; }
+function planFor(o,S,i){ if(!R || i<0 || !S.months[i]) return null; o.plan=o.plan||{off:{}}; return R.plan(S,i,o.profile,{bookings:orgBookings(o.id), off:o.plan.off||{}, anchor:anchorFor(S.months[i].month)}); }
+var BK_L={requested:'Requested',confirmed:'Confirmed',completed:'Done',cancelled:'Cancelled'};
+function bookingChip(b){ return '<span class="st st-bk-'+esc(b.status)+'">'+(BK_L[b.status]||esc(b.status))+'</span>'; }
+var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function pad2(n){ return (n<10?'0':'')+n; }
+function slotDate(v){ if(!v) return null; var p=v.split('T'), d=p[0].split('-'), t=(p[1]||'09:00').split(':'); return new Date(+d[0],+d[1]-1,+d[2],+t[0],+t[1]); }
+function timeLabel(d){ var h=d.getHours(), mi=d.getMinutes(); return (h%12||12)+':'+pad2(mi)+' '+(h<12?'am':'pm'); }
+function slotLabel(v,other){ if(!v) return other?'Time to be arranged':'—'; var d=slotDate(v); return DOW[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)+' '+d.getFullYear()+', '+timeLabel(d); }
+function provOf(s){ return (R&&R.PROVIDERS[s.prov])||{label:'',note:''}; }
+function upText(u){ if(!u) return ''; var parts=Object.keys(u.cats).sort(function(a,b){ return u.cats[b]-u.cats[a]; }).slice(0,2).map(function(k){ var v=u.cats[k]; return esc(D.CAT[k].short)+' '+sgn(v,Math.abs(v)<1?1:0); }); if(u.overall>=0.05) parts.push('Score '+sgn(u.overall,1)); return parts.join(' · '); }
+function grpDot(s){ return s.prov==='group'?' <span class="grp-dot" title="Delivered by a Recycle Group business">●</span>':''; }
+function itemName(it){ return esc(it.title)+grpDot(it.s); }
+function quarterRows(P){ return P.quarters.filter(function(q,ix){ return q.starts.length||q.full.length||ix===P.quarters.length-1; }); }
+
+function threeNums(P,m,cls){
+  var n=P.active.filter(function(it){ return it.k!=='grants'; }).length, extra=[];
+  if(P.emis.cut>=1) extra.push('about '+fmt(P.emis.cut,0)+' t CO₂-e a year less');
+  if(P.landfill.cut>=1) extra.push(fmt(P.landfill.cut,0)+' t a year less to landfill');
+  return '<div class="three'+(cls?' '+cls:'')+'">'
+    + '<div class="tn"><span class="k">Now</span><b>'+(P.now==null?'—':P.now)+'</b><span class="s">'+esc(E.band(P.now))+' · '+esc(mLabel(m.month))+'</span></div>'
+    + '<div class="tn"><span class="k">At your targets</span><b>'+(P.target==null?'—':P.target)+'</b><span class="s">If every target in your profile were met</span></div>'
+    + '<div class="tn hl"><span class="k">With YES help · estimate</span><b>'+(P.potential==null?'—':P.potential)+'</b><span class="s">'+n+' recommended item'+(n===1?'':'s')+(extra.length?' · '+extra.join(' · '):'')+'</span></div>'
+    + '</div>';
+}
+function roadChart(S,i,P,o){
+  o=o||{}; var phone=!o.print && window.innerWidth<700;
+  var a=S.months.slice(Math.max(0,i-11),i+1).map(function(x){ return {label:mShort(x.month), v:x.score, prov:x.status!=='verified'}; });
+  var pr=P.proj.map(function(p){ return {label:mShort(p.month), v:p.v}; });
+  return lineChart(a.concat(pr),{split:a.length-1, refs:P.target!=null?[{v:P.target,label:'At your targets · '+P.target}]:[], label:'Score by month, with the projection', w:phone?420:720, h:phone?300:(o.h||230), dark:o.dark, maxLabels:phone?5:(o.maxLabels||10)});
+}
+function recCard(it){
+  var s=it.s, pv=provOf(s), b=it.booking, up=upText(it.uplift);
+  return '<article class="rec'+(s.prov==='group'?' grp':'')+'">'
+    + '<p class="k">'+esc(s.cat?D.CAT[s.cat].name:'Funding')+'</p>'
+    + '<h3>'+esc(it.title)+'</h3>'
+    + '<p class="why">'+esc(it.why)+'</p>'
+    + '<dl class="rec-dl"><dt>Estimated change</dt><dd>'+(up||esc(s.effectText))+'</dd><dt>Who</dt><dd>'+esc(pv.label)+(s.prov==='group'?' · disclosed on your report':'')+'</dd></dl>'
+    + '<div class="rec-f">'+(b?bookingChip(b)+'<span class="small muted">'+esc(slotLabel(b.slot,b.other))+'</span>':'<a class="btn btn-primary btn-sm" href="#/book/'+s.k+'">Book a session</a>')+'</div>'
+    + '</article>';
+}
+function sinceText(S,b,i){
+  var sn=R.since(S,b,i);
+  if(sn && sn.from!=null && sn.now!=null) return esc(D.CAT[sn.cat].short)+' '+fmt(sn.from,0)+' → '+fmt(sn.now,0)+' ('+sgn(Math.round(sn.now)-Math.round(sn.from))+') since '+mShort(sn.month);
+  return 'Shows as the months after '+(b.completedMonth?mShort(b.completedMonth):'the work')+' are verified';
+}
+function bookingRow(b,o,S,i){
+  var s=R.byKey[b.svc]; if(!s) return '';
+  var since = b.status==='completed' ? sinceText(S,b,i) : '—';
+  var act = (b.status==='requested'||b.status==='confirmed') ? (ui.confirmCancel===b.id
+      ? '<div class="pill-row"><button class="btn btn-ink btn-sm" type="button" data-act="bk-cancel-go" data-id="'+esc(b.id)+'">Yes, cancel</button><button class="btn btn-ghost btn-sm" type="button" data-act="bk-cancel-no" style="color:var(--ink)">Keep</button></div>'
+      : '<button class="btn btn-ghost btn-sm" type="button" data-act="bk-cancel" data-id="'+esc(b.id)+'" style="color:var(--ink)">Cancel</button>') : '';
+  return '<tr><td><b>'+esc(R.title(s,o.profile))+'</b>'+grpDot(s)+'<div class="small muted">'+esc(provOf(s).label)+(b.mode?' · '+esc(b.mode):'')+'</div></td><td>'+esc(b.status==='completed'&&b.completedMonth?'Done '+mLabel(b.completedMonth):slotLabel(b.slot,b.other))+'</td><td>'+bookingChip(b)+'</td><td class="small">'+since+'</td><td>'+act+'</td></tr>';
+}
+
+function vRoadmap(){
+  var o=org(), S=seriesOf(o), m=monthOf(S);
+  if(!m || !R) return shell('roadmap','<div class="pg-head"><div><p class="kicker">Roadmap and help</p><h1>Your roadmap</h1></div></div><div class="empty">Your roadmap appears once your first month is verified.</div>');
+  var i=idxOf(S,m.month), P=planFor(o,S,i);
+  var head='<div class="pg-head"><div><p class="kicker">Roadmap and help</p><h1>Your roadmap</h1><p class="pg-sub">Your score now, the score at your own targets, and an estimate with the recommended help done. Based on your figures to '+mLabel(m.month)+(m.status!=='verified'?' (provisional: awaiting verification)':'')+'. The rules and assumptions are published in the <a class="link" href="../method/#help">method</a>.</p></div><div class="pg-actions"><a class="btn btn-ink btn-sm" href="#/report/'+m.month+'">Report with roadmap</a></div></div>';
+  var top='<section class="panel-dark rm-top">'+threeNums(P,m,'dark')+'<div class="rm-chart">'+roadChart(S,i,P,{dark:true})+'</div><p class="rm-leg"><span class="lg-i"><span class="lg-l solid"></span>Your score by month</span><span class="lg-i"><span class="lg-l dash"></span>Projected with the plan below (estimate)</span><span class="lg-i"><span class="lg-l dot"></span>At your targets</span></p></section>';
+  var rows=P.items.map(function(it){
+    var s=it.s, b=it.booking, pv=provOf(s);
+    var st = b ? bookingChip(b)+'<div class="small muted">'+esc(slotLabel(b.slot,b.other))+'</div>' : '<a class="btn btn-primary btn-sm" href="#/book/'+s.k+'">Book a session</a>';
+    return '<tr'+(it.off?' class="off"':'')+'><td class="tg"><label class="tgl" title="'+(b?'Booked items stay in the plan':'Include in the plan')+'"><input type="checkbox" data-act="plan-toggle" data-svc="'+s.k+'"'+(it.off?'':' checked')+(b?' disabled':'')+'><span class="vh">Include '+esc(it.title)+' in the plan</span></label></td>'
+      + '<td><b>'+itemName(it)+'</b><div class="small muted">'+esc(pv.label)+' · '+esc(s.session)+'</div><div class="small why">'+esc(it.why)+'</div></td>'
+      + '<td class="small">'+(upText(it.uplift)||esc(s.effectText))+'</td>'
+      + '<td>'+(it.start?mShort(it.start):'<span class="muted">Not in plan</span>')+'</td>'
+      + '<td>'+st+'</td></tr>';
+  }).join('');
+  var plan='<h2 class="sec-t" style="margin-top:28px">Recommended help</h2><p class="sec-s">Weakest category first. Untick an item to see the estimate without it. The estimated change is for each item on its own, once it has taken full effect.</p>'
+    + (rows?'<div class="tbl-wrap"><table class="tbl compact plan"><thead><tr><th><span class="vh">Include</span></th><th>Help</th><th>Estimated change</th><th>Starts</th><th>Booking</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Nothing is recommended from your current figures.</div>');
+  var qrows=quarterRows(P).map(function(q){ return '<tr><td><b>'+esc(q.label)+'</b></td><td>'+(q.starts.length?q.starts.map(function(it){ return itemName(it)+(it.booking?' <span class="muted small">('+(it.booking.status==='requested'?'requested':'booked')+')</span>':''); }).join('<br>'):'<span class="muted">—</span>')+'</td><td>'+(q.full.length?q.full.map(itemName).join('<br>'):'<span class="muted">—</span>')+'</td><td class="num"><b>'+(q.score==null?'—':q.score)+'</b></td></tr>'; }).join('');
+  var qs='<h2 class="sec-t" style="margin-top:28px">Plan by quarter</h2><p class="sec-s">'+esc(R.ROADMAP_RULES)+'</p>'+(P.active.length?'<div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Quarter</th><th>Starts</th><th>Full effect</th><th class="r">Projected score</th></tr></thead><tbody>'+qrows+'</tbody></table></div>':'<div class="empty">Nothing in the plan. Tick an item above to add it.</div>');
+  var bl=orgBookings(o.id).slice().sort(function(a,b){ return (b.slot||b.createdAt||'')<(a.slot||a.createdAt||'')?-1:1; });
+  var bk='<h2 class="sec-t" style="margin-top:28px">Your bookings and progress</h2>'+(bl.length?'<div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Help</th><th>When</th><th>Status</th><th>Since then</th><th></th></tr></thead><tbody>'+bl.map(function(b){ return bookingRow(b,o,S,i); }).join('')+'</tbody></table></div><p class="small muted" style="margin-top:10px">Since then: the change in the category score from the month the work was done to your latest month. Other changes affect it too, so it does not show that the work caused it.</p>':'<div class="empty">No help booked yet.</div>');
+  var ind='<div class="panel" style="margin-top:28px"><h3>How the recommendations stay independent</h3><ul class="plain">'+R.INDEPENDENCE.map(function(t){ return '<li><b>'+esc(t.k)+'.</b> '+esc(t.d)+'</li>'; }).join('')+'</ul></div>';
+  return shell('roadmap', head+top+plan+qs+bk+ind);
+}
+
+function nextSlots(){ var out=[], d=new Date(); d.setHours(0,0,0,0); while(out.length<20){ d.setDate(d.getDate()+1); var w=d.getDay(); if(w===0||w===6) continue; var ds=d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); out.push(ds+'T09:00'); out.push(ds+'T13:30'); } return out; }
+function slotTaken(v,svc,orgId){ return (state.bookings||[]).some(function(b){ return b.status!=='cancelled' && b.slot===v && (b.svc===svc || b.org===orgId); }); }
+function vBook(key){
+  var o=org(), s=R&&R.byKey[key]; if(!s) return vNotFound();
+  var S=seriesOf(o), m=monthOf(S), i=m?idxOf(S,m.month):-1, r=m?R.recommend(S,i,o.profile).filter(function(x){ return x.k===key; })[0]:null;
+  var u=me(), contact=u.role==='customer'?u:(state.users.filter(function(x){ return x.org===o.id; })[0]||{name:'',email:''});
+  var open=orgBookings(o.id).filter(function(b){ return b.svc===key && (b.status==='requested'||b.status==='confirmed'); })[0];
+  var slots=nextSlots().filter(function(v){ return !slotTaken(v,key,o.id); }), byDay={}, days=[];
+  slots.forEach(function(v){ var d=v.slice(0,10); if(!byDay[d]){ byDay[d]=[]; days.push(d); } byDay[d].push(v); });
+  var grid=days.map(function(d){ var dt=slotDate(d+'T09:00'); return '<div class="sday"><div class="sd">'+DOW[dt.getDay()]+' '+dt.getDate()+' '+MONTHS[dt.getMonth()].slice(0,3)+'</div>'+byDay[d].map(function(v){ return '<button type="button" class="slot" data-act="slot" data-slot="'+v+'" aria-pressed="false">'+timeLabel(slotDate(v))+'</button>'; }).join('')+'</div>'; }).join('');
+  var pv=provOf(s), title=R.title(s,o.profile);
+  var body='<div class="pg-head"><div><p class="kicker"><a class="link" href="#/roadmap">Roadmap and help</a> · Book</p><h1>'+esc(title)+'</h1><p class="pg-sub">'+esc(s.what)+'</p></div></div>'
+    + (open?'<div class="banner grey"><span>You already have a '+esc(BK_L[open.status].toLowerCase())+' booking for this: <b>'+esc(slotLabel(open.slot,open.other))+'</b>.</span><a class="btn btn-ghost btn-sm" href="#/roadmap" style="color:var(--ink)">See it</a></div>':'')
+    + '<div class="row2 w73 book"><div class="panel"><h3>Choose a time</h3><p class="sec-s" style="margin-top:4px">'+esc(s.session)+'. The next ten business days, in your local time.</p>'
+    + '<div class="slots" role="group" aria-label="Available times">'+grid+'<div class="sday"><div class="sd">Other</div><button type="button" class="slot" data-act="slot" data-slot="other" aria-pressed="false">Another time</button></div></div>'
+    + '<div class="stack" style="margin-top:24px">'
+    + '<fieldset class="field"><legend class="lbl">Format</legend><div class="pill-row">'+s.modes.map(function(md,ix){ return '<label class="radio"><input type="radio" name="bk-mode" value="'+esc(md)+'"'+(ix===0?' checked':'')+'> '+esc(md)+'</label>'; }).join('')+'</div></fieldset>'
+    + '<div class="field"><label for="bk-loc">Where, for an on-site session</label><input type="text" id="bk-loc" value="'+esc(o.profile.org_name)+'"></div>'
+    + '<div class="row2"><div class="field"><label for="bk-name">Contact name</label><input type="text" id="bk-name" value="'+esc(contact.name||'')+'" autocomplete="name"></div><div class="field"><label for="bk-email">Contact email</label><input type="email" id="bk-email" value="'+esc(contact.email||'')+'" autocomplete="email"></div></div>'
+    + '<div class="field"><label for="bk-notes">Notes</label><textarea id="bk-notes" rows="3" placeholder="Anything the specialist should know, or a time that suits you if none above does."></textarea></div>'
+    + '<label class="check"><input type="checkbox" id="bk-share" checked> <span>Share the YES figures behind this recommendation with the provider, so they arrive prepared.</span></label>'
+    + '<div class="note-box grey">Prototype: nothing is sent. In production, YES would confirm the time with you by email.</div>'
+    + '<div class="btn-row"><button class="btn btn-primary" type="button" data-act="book-submit" data-svc="'+s.k+'">Request this booking</button><a class="btn btn-ghost" href="#/roadmap" style="color:var(--ink)">Back to the roadmap</a></div>'
+    + '</div></div>'
+    + '<aside class="panel bk-side"><h3>Why it is recommended</h3><p class="small" style="margin-top:8px">'+esc(r?r.why:'Your current figures do not call for this, but you can still book it.')+'</p>'
+    + '<dl class="rec-dl" style="margin-top:14px"><dt>Estimated change</dt><dd>'+(r?(upText(r.uplift)||esc(s.effectText)):'—')+'</dd></dl><p class="small muted" style="margin:8px 0 0">Assumed effect: '+esc(s.effectText)+'</p>'
+    + '<h3 style="margin-top:22px">Who delivers it</h3><p class="small" style="margin-top:8px">'+esc(s.who)+'</p>'+(s.prov==='group'?'<p class="small muted">'+esc(s.groupNames)+(s.groupNames.indexOf(' and ')>0?' are':' is')+' part of Recycle Group, like YES. Disclosed on your monthly report.</p>':s.prov==='partner'?'<p class="small muted">Independent specialist: chosen by you, and YES can introduce one.</p>':'')
+    + '<p class="small muted" style="margin-top:10px">You can use any provider. Your score and the verification of your figures do not depend on who does the work.</p></aside></div>';
+  return shell('roadmap', body);
+}
+
+/* the figures behind an open booking, from the customer's verified months, when none were saved with it */
+function liveWhy(b){ if(!(b.status==='requested'||b.status==='confirmed')) return ''; var o=state.orgs[b.org]; if(!o) return ''; var S=E.series(o.records.filter(function(r){ return r.status==='verified'; }), o.profile), i=S.months.length-1; if(i<0) return ''; var r=R.recommend(S,i,o.profile).filter(function(x){ return x.k===b.svc; })[0]; return r?r.why:''; }
+function vBookings(){
+  var order={requested:0,confirmed:1,completed:2,cancelled:3};
+  var bs=(state.bookings||[]).slice().sort(function(a,b){ return (order[a.status]-order[b.status]) || ((a.slot||'')<(b.slot||'')?-1:1); });
+  var rows=bs.map(function(b){ var o=state.orgs[b.org], s=R&&R.byKey[b.svc]; if(!o||!s) return ''; var acts='';
+    if(b.status==='requested') acts='<button class="btn btn-primary btn-sm" type="button" data-act="bk-confirm" data-id="'+esc(b.id)+'">Confirm</button><button class="btn btn-ghost btn-sm" type="button" data-act="bk-cancel-op" data-id="'+esc(b.id)+'" style="color:var(--ink)">Cancel</button>';
+    else if(b.status==='confirmed') acts='<button class="btn btn-ink btn-sm" type="button" data-act="bk-done" data-id="'+esc(b.id)+'">Mark done</button><button class="btn btn-ghost btn-sm" type="button" data-act="bk-cancel-op" data-id="'+esc(b.id)+'" style="color:var(--ink)">Cancel</button>';
+    else if(b.status==='completed') acts='<span class="small muted">Done '+(b.completedMonth?mLabel(b.completedMonth):'')+'</span>';
+    return '<tr><td><b>'+esc(o.profile.org_name)+'</b><div class="small muted">'+esc(b.contact||'')+(b.email?' · '+esc(b.email):'')+'</div></td>'
+      + '<td><b>'+esc(R.title(s,o.profile))+'</b>'+grpDot(s)+'<div class="small muted">'+esc(provOf(s).label)+'</div>'+(b.notes?'<div class="small">'+esc(b.notes)+'</div>':'')+(b.share&&(b.why||liveWhy(b))?'<div class="small muted">Figures shared: '+esc(b.why||liveWhy(b))+'</div>':'')+'</td>'
+      + '<td>'+esc(slotLabel(b.slot,b.other))+'<div class="small muted">'+esc(b.mode||'')+(b.location?' · '+esc(b.location):'')+'</div></td><td>'+bookingChip(b)+'</td><td><div class="pill-row">'+acts+'</div></td></tr>'; }).join('');
+  var body='<div class="pg-head"><div><p class="kicker">YES team</p><h1>Bookings</h1><p class="pg-sub">Help requested from customers\' roadmaps. Confirm the time with the customer and the provider, then mark it done when the work is complete so the customer can follow the change in later months. Work by a Recycle Group business (●) is disclosed on the customer\'s report.</p></div></div>'
+    + (rows?'<div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Organisation</th><th>Help</th><th>When</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">No bookings yet.</div>');
+  return shell('bookings', body);
+}
+
+/* report page 3: the roadmap */
+function sheet3(o,S,i,P,k){
+  var p=o.profile, m=S.months[i];
+  var qrows=quarterRows(P).map(function(q){ return '<tr><td>'+esc(q.label)+'</td><td>'+(q.starts.length?q.starts.map(function(it){ return itemName(it)+(it.booking?' <span class="muted">('+(it.booking.status==='requested'?'requested':'booked')+')</span>':''); }).join(' · '):'<span class="muted">No new starts</span>')+'</td><td class="num">'+(q.score==null?'—':q.score)+'</td></tr>'; }).join('');
+  var bl=orgBookings(o.id).filter(function(b){ return b.status!=='cancelled' && R.byKey[b.svc]; });
+  var prog=bl.map(function(b){ var s=R.byKey[b.svc]; return '<tr><td>'+itemName({title:R.title(s,p), s:s})+'</td><td>'+esc(BK_L[b.status])+'</td><td>'+esc(b.status==='completed'&&b.completedMonth?mLabel(b.completedMonth):slotLabel(b.slot,b.other))+'</td><td>'+(b.status==='completed'?sinceText(S,b,i):'—')+'</td></tr>'; }).join('');
+  var names={}; P.items.concat(bl.map(function(b){ return {s:R.byKey[b.svc]}; })).forEach(function(it){ if(it.s && it.s.prov==='group') names[it.s.groupNames]=1; });
+  var nm=Object.keys(names);
+  var disc = nm.length ? 'Items marked ● are delivered by a Recycle Group business ('+nm.join('; ')+'). YES is part of Recycle Group. You can use any provider; your score and its verification do not depend on who does the work.' : 'No item in this plan is delivered by a Recycle Group business. YES is part of Recycle Group.';
+  return '<section class="rp-sheet rp-road"><div class="rp-head"><div><div class="rp-title" style="font-size:22px">'+esc(p.org_name)+' · '+mLabel(k)+'</div></div><div class="rp-kv"><span>Report</span><b>Roadmap</b></div></div>'
+    + threeNums(P,m,'rp')
+    + '<div class="rp-h">Score by month, and projected with the plan</div>'+roadChart(S,i,P,{h:190,print:true})+'<p class="rp-leg"><span class="lg-i"><span class="lg-l solid"></span>Your score by month</span><span class="lg-i"><span class="lg-l dash"></span>Projected with the plan (estimate)</span><span class="lg-i"><span class="lg-l dot"></span>At your targets</span></p>'
+    + '<div class="rp-h">Plan by quarter</div>'+(P.active.length?'<div class="rp-tw"><table class="tbl compact"><thead><tr><th>Quarter</th><th>Starts (each builds up over '+R.RAMP+' months)</th><th class="r">Projected score at quarter end</th></tr></thead><tbody>'+qrows+'</tbody></table></div>':'<p class="rp-p">No help is in the plan.</p>')
+    + '<div class="rp-h">Progress so far</div>'+(prog?'<div class="rp-tw"><table class="tbl compact"><thead><tr><th>Help</th><th>Status</th><th>When</th><th>Change since</th></tr></thead><tbody>'+prog+'</tbody></table></div>':'<p class="rp-p">No help booked yet.</p>')
+    + '<div class="rp-h">Disclosures and assumptions</div><p class="rp-p">'+esc(disc)+' The projection and the score with YES help are estimates from the published assumptions; they are not a promise or a guarantee. A change since completed work is a change in the figures, not proof that the work caused it.</p>'
+    + '<div class="rp-foot">'+esc(R.ROADMAP_RULES)+' Rules and assumptions: yes.com.au/method. Page 3 of 3.</div></section>';
 }
 
 /* ------------------------------------------------------------------ organisation */
@@ -551,10 +720,12 @@ function render(){
     else if(a==='entry' && isOp()){ if(P[1] && state.orgs[P[1]] && state.session.viewOrg!==P[1]){ state.session.viewOrg=P[1]; save(); } html=P[2]?vSubmit(P[2],q):vEntryQueue(); }
     else if(a==='documents') html=vDocuments();
     else if(a==='reports') html=vReports();
+    else if(a==='roadmap') html=vRoadmap();
+    else if(a==='book') html=vBook(P[1]);
     else if(a==='report') html=vReport(P[1]);
     else if(a==='organisation') html=vOrganisation();
     else if(a==='data') html=vData();
-    else if(a==='ops' && isOp()){ html = !P[1] ? vQueue() : P[1]==='entry' ? vEntryQueue() : P[1]==='customers' ? vCustomers() : P[1]==='review' ? vReview(P[2],P[3]) : P[1]==='factors' ? vFactors() : P[1]==='activity' ? vActivity() : vNotFound(); }
+    else if(a==='ops' && isOp()){ html = !P[1] ? vQueue() : P[1]==='entry' ? vEntryQueue() : P[1]==='customers' ? vCustomers() : P[1]==='review' ? vReview(P[2],P[3]) : P[1]==='factors' ? vFactors() : P[1]==='activity' ? vActivity() : P[1]==='bookings' ? vBookings() : vNotFound(); }
     else html=vNotFound();
   }
   app.innerHTML=html;
@@ -589,6 +760,7 @@ app.addEventListener('input', function(e){
 app.addEventListener('change', function(e){
   var t=e.target, act=t.getAttribute('data-act');
   if(act==='dash-month'){ go('#/dashboard?m='+t.value); }
+  else if(act==='plan-toggle'){ var po=org(); po.plan=po.plan||{off:{}}; po.plan.off=po.plan.off||{}; var sv=t.getAttribute('data-svc'); if(t.checked) delete po.plan.off[sv]; else po.plan.off[sv]=true; save(); render(); }
   else if(act==='ev-file' && t.files && t.files[0]){ attach(t.getAttribute('data-cat'), t.files[0]); }
   else if(act==='import-file' && t.files && t.files[0]){ previewImport(t.files[0]); }
   else if(act==='ev-pick' && t.value!==''){ var c3=currentSubmit(); if(!c3) return; var d=(c3.r.inbox||[])[+t.value]; if(!d) return; c3.r.evidence=c3.r.evidence||{}; c3.r.evidence[t.getAttribute('data-cat')]={name:d.name,size:d.size,type:d.type,at:isoNow(),pending:true,grade:null,key:d.key,demo:!d.key}; save(); render(); }
@@ -628,6 +800,23 @@ function previewImport(file){
   rd.readAsText(file);
 }
 
+function bkDesc(b){ var s=R&&R.byKey[b.svc], o=state.orgs[b.org]; return (o?o.profile.org_name+' · ':'')+(s?R.title(s,o?o.profile:{}):b.svc)+' · '+slotLabel(b.slot,b.other); }
+function bookSubmit(key){
+  var o=org(), s=R&&R.byKey[key]; if(!s) return;
+  var sl=ui.bookSlot; if(!sl){ flash('Choose a time, or Another time.','err'); var g=$('.slots'); if(g) g.scrollIntoView({block:'center'}); return; }
+  var mode=($('input[name="bk-mode"]:checked')||{}).value||s.modes[0];
+  var name=($('#bk-name').value||'').trim(), email=($('#bk-email').value||'').trim(), notes=($('#bk-notes').value||'').trim(), loc=($('#bk-loc').value||'').trim(), share=!!($('#bk-share')||{}).checked;
+  if(!name){ flash('Add a contact name.','err'); $('#bk-name').focus(); return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ flash('Add a valid contact email.','err'); $('#bk-email').focus(); return; }
+  if(sl==='other' && !notes){ flash('Say in the notes which time suits you.','err'); $('#bk-notes').focus(); return; }
+  if(sl!=='other' && slotTaken(sl,key,o.id)){ flash('That time has just been taken. Choose another.','err'); return; }
+  var S=seriesOf(o), m=monthOf(S), i=m?idxOf(S,m.month):-1, r=m?R.recommend(S,i,o.profile).filter(function(x){ return x.k===key; })[0]:null;
+  var b={id:'bk-'+Date.now().toString(36), org:o.id, svc:key, status:'requested', slot:sl==='other'?null:sl, other:sl==='other', mode:mode, location:mode==='On site'?loc:'', contact:name, email:email, notes:notes, share:share, why:share&&r?r.why:'', month:m?m.month:null, group:s.prov==='group', createdAt:isoNow(), createdBy:me().name};
+  state.bookings=state.bookings||[]; state.bookings.push(b);
+  log('Help requested',bkDesc(b),o.id); save(); ui.bookSlot=null;
+  flash('Requested: '+R.title(s,o.profile)+'.'); go('#/roadmap');
+}
+
 document.addEventListener('click', function(e){
   var t=e.target.closest ? e.target.closest('[data-act]') : null; if(!t) return;
   var act=t.getAttribute('data-act'), o;
@@ -657,7 +846,14 @@ document.addEventListener('click', function(e){
     case 'import-cancel': ui.importPreview=null; render(); break;
     case 'import-go': o=org(); var pv=ui.importPreview; if(!pv) return; pv.items.forEach(function(it){ var r=rec(o,it[0]); if(!r){ r={month:it[0],values:{},evidence:{},status:'draft'}; o.records.push(r); } if(r.status==='submitted'||r.status==='verified') return; var f=D.FIELD[it[1]]; var v=it[2]; if(f.kind==='text'||f.kind==='select'){ if(v!=='') r.values[it[1]]=v; } else if(v!==''&&isFinite(+v)) r.values[it[1]]=+v; }); log('Figures imported',pv.ok+' figures from '+pv.name); save(); ui.importPreview=null; flash('Imported '+pv.ok+' figures into months open for data entry.'); go('#/ops/entry'); break;
     case 'verify': var ov=state.orgs[t.getAttribute('data-org')], rv=rec(ov,t.getAttribute('data-month')); if(rv.enteredBy && rv.enteredBy===me().name){ flash('You entered this month, so a different analyst must verify it.','err'); return; } var ungraded=Object.keys(rv.evidence||{}).filter(function(cat){ return !rv.evidence[cat].grade; }); if(ungraded.length){ flash('Grade every attached document first ('+ungraded.map(function(c){ return D.CAT[c].short; }).join(', ')+').','err'); return; } rv.status='verified'; rv.verifiedAt=isoNow().slice(0,10); rv.verifiedBy=me().name; var note=($('#rv-note')||{}).value; if(note){ rv.notes=rv.notes||[]; rv.notes.push({by:me().name,at:isoNow(),text:note}); } log('Month verified',mLabel(rv.month),ov.id); save(); flash(ov.profile.org_name+' · '+mLabel(rv.month)+' verified.'); go('#/ops'); break;
-    case 'return': var or=state.orgs[t.getAttribute('data-org')], rr=rec(or,t.getAttribute('data-month')); var nt=($('#rv-note')||{}).value; if(!nt||!nt.trim()){ flash('Add a note so the customer knows what to fix.','err'); var ta=$('#rv-note'); if(ta) ta.focus(); return; } rr.status='returned'; rr.notes=rr.notes||[]; rr.notes.push({by:me().name,at:isoNow(),text:nt.trim()}); log('Month returned to data entry',mLabel(rr.month)+' · '+nt.trim(),or.id); save(); flash('Returned to data entry with your note.'); go('#/ops'); break;
+    case 'slot': ui.bookSlot=t.getAttribute('data-slot'); $$('.slot',app).forEach(function(x){ x.setAttribute('aria-pressed', x===t?'true':'false'); }); break;
+    case 'book-submit': bookSubmit(t.getAttribute('data-svc')); break;
+    case 'bk-confirm': var bc=bkById(t.getAttribute('data-id')); if(!bc) return; bc.status='confirmed'; bc.confirmedAt=isoNow(); bc.confirmedBy=me().name; log('Booking confirmed',bkDesc(bc),bc.org); save(); flash('Confirmed: '+bkDesc(bc)+'.'); render(); break;
+    case 'bk-done': var bd=bkById(t.getAttribute('data-id')); if(!bd) return; var sm=bd.slot?bd.slot.slice(0,7):nowKey(); bd.status='completed'; bd.completedMonth=sm<=nowKey()?sm:nowKey(); bd.completedAt=isoNow(); bd.completedBy=me().name; log('Help marked done',bkDesc(bd)+' · '+mLabel(bd.completedMonth),bd.org); save(); flash('Marked done. The change shows as later months are verified.'); render(); break;
+    case 'bk-cancel-op': case 'bk-cancel-go': var bx=bkById(t.getAttribute('data-id')); if(!bx) return; bx.status='cancelled'; bx.cancelledAt=isoNow(); bx.cancelledBy=me().name; ui.confirmCancel=null; log('Booking cancelled',bkDesc(bx),bx.org); save(); flash('Booking cancelled.'); render(); break;
+    case 'bk-cancel': ui.confirmCancel=t.getAttribute('data-id'); render(); break;
+    case 'bk-cancel-no': ui.confirmCancel=null; render(); break;
+    case 'return': var or=state.orgs[t.getAttribute('data-org')], rr=rec(or,t.getAttribute('data-month')); var nt=($('#rv-note')||{}).value; if(!nt||!nt.trim()){ flash('Add a note so data entry knows what to fix.','err'); var ta=$('#rv-note'); if(ta) ta.focus(); return; } rr.status='returned'; rr.notes=rr.notes||[]; rr.notes.push({by:me().name,at:isoNow(),text:nt.trim()}); log('Month returned to data entry',mLabel(rr.month)+' · '+nt.trim(),or.id); save(); flash('Returned to data entry with your note.'); go('#/ops'); break;
   }
 });
 
