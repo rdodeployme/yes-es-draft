@@ -16,7 +16,7 @@ NAME = "Yindyamarra Environmental Sustainability"
 
 # path, fragment, title, description, nav key
 PAGES = [
-    ("", "home.html", "YES · Yindyamarra Environmental Sustainability", "Whole-of-council environmental reporting. Enter the raw numbers once; YES calculates the emissions, the rates, the trends and the Yindyamarra Environmental Score.", "home"),
+    ("", "home.html", "YES · Yindyamarra Environmental Sustainability", "Whole-of-council environmental reporting. Send the documents once a month; YES enters the raw numbers and calculates the emissions, the rates, the trends and the Yindyamarra Environmental Score.", "home"),
     ("score/", "score.html", "The Yindyamarra Environmental Score · YES", "One monthly score out of 100 across ten categories, with the direction of travel. One of the key reports YES provides for councils.", "score"),
     ("portal/", "portal.html", "Customer portal · YES", "The YES customer portal prototype: monthly data entry, evidence, calculations and reports. Demo data only.", "portal"),
     ("data-dictionary/", "dictionary.html", "Data dictionary · YES", "Every field YES collects and every figure it calculates: definition, unit, frequency, source, mandatory status, calculation and score.", "dictionary"),
@@ -58,7 +58,7 @@ def shell(path, frag, title, desc, key, body, v):
 </head>
 <body class="page-{key or 'misc'}">
 <a class="sr-only" href="#main">Skip to content</a>
-<div class="draft" role="note"><div class="wrap"><span class="tag">Unlisted draft</span><span><b>Not for public use.</b> Demo data only. <b>Yindyamarra</b> is a Wiradjuri word: it will not be used at launch without the permission of Wiradjuri language custodians, and the logo is to be designed by an Aboriginal artist.</span></div></div>
+<div class="draft" role="note"><div class="wrap"><span class="tag">Unlisted draft</span><span><b>Not for public use.</b> Demo data only. <b>Yindyamarra</b> is a Wiradjuri word, used with the permission of Wiradjuri language custodians. The logo is to be designed by an Aboriginal artist.</span></div></div>
 '''
     header = f'''<header class="hdr"><div class="wrap">
   <a class="brand" href="{r}" aria-label="YES home"><span class="mark silver">YES</span><span class="full">Yindyamarra<br>Environmental Sustainability</span></a>
