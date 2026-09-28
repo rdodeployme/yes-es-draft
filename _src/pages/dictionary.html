@@ -6,7 +6,7 @@
     <h1>Data dictionary</h1>
     <p class="lead">The blueprint for the portal and its database. For every field: its name, definition, unit, frequency, source, whether it is mandatory or optional, how it is calculated, and which score it feeds.</p>
     <dl class="dd-stats">
-      <div><dt>Fields you enter</dt><dd data-n="inputs">98</dd></div>
+      <div><dt>Raw fields YES records</dt><dd data-n="inputs">98</dd></div>
       <div><dt>Figures YES calculates</dt><dd data-n="calcs">25</dd></div>
       <div><dt>Mandatory each month</dt><dd data-n="req-m">9</dd></div>
       <div><dt>Organisation profile fields</dt><dd data-n="profile">16</dd></div>
@@ -28,7 +28,7 @@
       <div class="field"><label for="dd-cat">Category</label><select id="dd-cat"><option value="">All categories</option></select></div>
       <fieldset class="seg"><legend>Type</legend><div class="seg-in">
         <label><input type="radio" name="dd-type" value="" checked><span>All</span></label>
-        <label><input type="radio" name="dd-type" value="input"><span>Entered by you</span></label>
+        <label><input type="radio" name="dd-type" value="input"><span>Entered by YES</span></label>
         <label><input type="radio" name="dd-type" value="calc"><span>Calculated by YES</span></label>
       </div></fieldset>
       <fieldset class="seg"><legend>Frequency</legend><div class="seg-in">
@@ -48,7 +48,7 @@
     </div>
     <div class="tbl-wrap dd-wrap" tabindex="0" role="region" aria-label="Data dictionary table, scrolls sideways on small screens">
       <table class="tbl dd-tbl" id="dd-tbl">
-        <caption class="sr-only">YES data dictionary: the fields customers enter and the figures YES calculates, grouped by category</caption>
+        <caption class="sr-only">YES data dictionary: the raw fields YES enters and the figures YES calculates, grouped by category</caption>
         <colgroup><col class="k1"><col class="k2"><col class="k3"><col class="k4"><col class="k5"><col class="k6"><col class="k7"><col class="k8"></colgroup>
         <thead><tr>
           <th scope="col" class="c-id">ID</th><th scope="col">Field and definition</th><th scope="col">Unit and kind</th><th scope="col">Frequency</th><th scope="col">Type</th><th scope="col">Source</th><th scope="col">Calculation</th><th scope="col">Feeds score</th>
@@ -103,7 +103,7 @@
   if(!tbl) return;
   if(!D||!D.FIELDS){ tbl.tBodies[0].innerHTML='<tr><td colspan="8" class="dd-empty">The data dictionary could not be loaded.</td></tr>'; return; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-  var CAT=D.CAT, FREQ=D.FREQ, TYPE={input:'Entered by you', calc:'Calculated by YES'}, NA='<span class="na" aria-label="Not applicable">—</span>';
+  var CAT=D.CAT, FREQ=D.FREQ, TYPE={input:'Entered by YES', calc:'Calculated by YES'}, NA='<span class="na" aria-label="Not applicable">—</span>';
   var q=d.getElementById('dd-q'), sel=d.getElementById('dd-cat'), cnt=d.getElementById('dd-count'), csvL=d.getElementById('dd-csv-l');
   var ROWS=D.FIELDS.map(function(f){ return {f:f, h:[f.id,f.name,f.def,f.src,f.unit,f.calc||'',CAT[f.cat]?CAT[f.cat].name:'',TYPE[f.type],FREQ[f.freq],(f.options||[]).join(' ')].join(' ').toLowerCase()}; });
   var SHOWN=D.FIELDS.slice();
