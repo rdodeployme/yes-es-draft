@@ -2,11 +2,11 @@
 
 **Status: unlisted draft v0.1. Not for public use. Demo data only.** Every page carries `noindex`, and `robots.txt` disallows crawling.
 
-YES is a monthly environmental reporting service. Councils first, then businesses and government, enter their raw operational figures once a month through a customer portal: litres, kilowatt-hours, kilolitres, tonnes, hectares and counts. YES calculates everything else: emissions, rates, intensities, trends, targets and the **Yindyamarra Environmental Score**. The score is one of the key reports YES provides to councils.
+YES is a monthly environmental reporting service for councils first, then businesses and government. Customers send their bills, dockets, statements and registers each month. **YES enters every raw figure** (litres, kilowatt-hours, kilolitres, tonnes, hectares and counts), and a second YES analyst verifies the month. YES then calculates everything else: emissions, rates, intensities, trends, targets and the **Yindyamarra Environmental Score**. The score is one of the key reports YES provides to councils.
 
 ## Cultural protocol (read before changing anything)
 
-- **Permission for the name.** *Yindyamarra* is a Wiradjuri word. It is not to be used at launch without the permission of Wiradjuri language custodians. The meaning we publish will be the one they give us.
+- **The name.** *Yindyamarra* is a Wiradjuri word, used with the permission of Wiradjuri language custodians. Confirm with them the translation wording the site uses ("often translated as respect, gentleness and taking responsibility") and whether they wish to be acknowledged by name.
 - **Other Aboriginal words.** No other Aboriginal words are used. Each word belongs to its own nation and needs its own permission.
 - **The logo.** It is to be designed by an Aboriginal artist and has not been commissioned yet.
 - **The Country film.** It is to be commissioned with Traditional Owners, paid for and approved by the people in it.
@@ -26,28 +26,29 @@ YES is a monthly environmental reporting service. Councils first, then businesse
 
 ## The portal prototype
 
-The portal is a static single-page app. Everything is kept in the visitor's browser: `localStorage` holds the figures and IndexedDB holds attached evidence files. Nothing is sent to a server.
+The portal is a static single-page app. Everything is kept in the visitor's browser: `localStorage` holds the figures and IndexedDB holds documents and evidence files. Nothing is sent to a server.
 
+- **Who does what.**
+  - **Customers** see their verified months, send documents and download their data. They never key figures.
+  - **YES data entry** keys every figure from the customer's documents and attaches the evidence.
+  - **YES verification** is a different person who checks each figure against its document, grades the evidence (A, B or C), and verifies the month or returns it to data entry with a note. The person who entered a month cannot verify it.
 - **Sign-in.** Demo accounts only, with no passwords:
   - three fictional organisations: Demo Shire Council (VIC), Demo Coastal Council (NSW) and Demo Freight Co. (QLD);
-  - a YES team account.
-- **Dashboard.** It shows:
+  - two YES team accounts: Morgan Lee (data entry) and Chris Walker (verification).
+- **Customer dashboard.** It shows verified months only:
   - the Yindyamarra Environmental Score, with year-on-year and month-on-month change;
   - ten category tiles with sparklines;
   - emissions by scope, including avoided emissions reported separately;
   - targets against actuals and the key rolling 12-month figures;
-  - the fleet and data quality.
-- **Category detail.** Each category shows its score history, how it is scored, and the figures entered compared with last month and last year.
-- **Monthly submission.**
-  - The form shows only the fields due that month: monthly; quarterly in Sep, Dec, Mar and Jun; annual in June; and static registers carried forward.
-  - YES calculations update live as the customer types.
-  - A figure more than 35% away from the same month last year, or from last month when there is no year-ago figure, gets a warning.
-  - Customers attach evidence for each category, then submit with an attestation.
-- **Reports.** A printable two-page A4 monthly report.
-- **Data.** CSV and JSON export, and CSV/JSON import into draft months only. The demo can be reset.
+  - the fleet and data quality;
+  - where the next month stands (entered and awaiting verification, or documents due).
+- **Send documents.** Upload by month and category; uploads open the month for YES data entry. Customers can also email documents.
+- **Reports.** A printable two-page A4 monthly report for each verified month.
+- **Data.** CSV and JSON export for customers. YES can import CSV/JSON into months open for data entry. The demo can be reset.
 - **YES team.**
-  - A review queue: flag figures, grade evidence (A, B or C), then verify the month or return it to the customer with a note.
-  - A customer list, a factor library and an activity log.
+  - Data entry: open months across customers, the customer's documents beside the form, only the fields due that month (monthly; quarterly in Sep, Dec, Mar and Jun; annual in June; static registers carried forward), live calculations, warnings for figures more than 35% away from last year or last month, evidence attached or picked from the customer's documents.
+  - Verification queue, customer list, factor library and activity log.
+  - The team also sees months waiting for verification on dashboards, marked provisional.
 
 ## How it is built
 
@@ -67,6 +68,7 @@ The portal is a static single-page app. Everything is kept in the visitor's brow
 
 - **Emissions factors.** DCCEEW National Greenhouse Accounts Factors 2024, as reproduced in the Commonwealth Emissions Reporting Framework 2024–25. Electricity is location-based, by state.
 - **Scope 3.** Covers the categories reported here only: waste to landfill, and upstream fuel, gas and electricity.
+- **Council boundary.** Council waste figures include the municipal kerbside service (garbage, recycling, food and garden organics, glass) and transfer stations, as well as council operations.
 - **Flights.** Recorded, but not converted to emissions until a factor is adopted.
 - **Avoided emissions.**
   - Modelled with NSW DECCW (2010) factors, which are flagged as dated.
@@ -75,15 +77,15 @@ The portal is a static single-page app. Everything is kept in the visitor's brow
   - It is the mean of the category scores that have data.
   - Trend comparisons use the same calendar months of the baseline year.
   - Target-based categories are provisional until 12 months of data exist.
-  - A month is provisional until YES verifies it.
+  - A month is provisional until a second YES analyst verifies it; customers see it once verified.
 - **Claims.**
   - The score is self-declared under the published method. It is not an accredited rating, certification or offset.
   - No carbon neutral, net zero or offset claims are made from YES figures.
 
 ## Before this becomes a real product
 
-1. **Permissions and commissions.** Get permission from Wiradjuri custodians for the name. Commission the logo and the Country film.
-2. **Authentication.** Real accounts: single sign-on or emailed sign-in links, with roles for customers and YES staff.
+1. **Commissions.** The logo by an Aboriginal artist and the Country film with Traditional Owners. Confirm the Yindyamarra wording with the custodians who gave permission.
+2. **Authentication.** Real accounts: single sign-on or emailed sign-in links, with roles for customers, YES data entry and YES verification.
 3. **Server-side data.** A database built from the data dictionary, evidence file storage, an audit log, and versioned factors with recalculation.
-4. **Method review.** Score weights and bands, the municipal waste boundary for councils, a flight factor, and refreshed avoided-emissions factors.
+4. **Method review.** Score weights and bands, a flight factor, and refreshed avoided-emissions factors.
 5. **Hosting.** Attach the yes.com.au domain and confirm the contact@ mailbox.
