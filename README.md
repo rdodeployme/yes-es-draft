@@ -43,18 +43,23 @@ The portal is a static single-page app. Everything is kept in the visitor's brow
   - the fleet and data quality;
   - where the next month stands (entered and awaiting verification, or documents due).
 - **Send documents.** Upload by month and category; uploads open the month for YES data entry. Customers can also email documents.
-- **Reports.** A printable two-page A4 monthly report for each verified month.
+- **Where you could be.** The dashboard shows three numbers: the score **now**, the score **at the organisation's own targets**, and an **estimate with YES help** (the recommended work done), with the tonnes of CO₂-e behind it.
+- **Recommended for you.** Published rules (`assets/js/recommend.js`) turn the figures into up to ten kinds of help, weakest category first. Each card shows why, the estimated change and who delivers it, with a **Book a session** button.
+- **Roadmap and help.** The three numbers, the last 12 months of scores with the projection and a target line, the plan (items can be switched off), the plan by quarter, and the customer's bookings with the change in the category score since completed work (a change, not a claim of cause).
+- **Booking.** Pick a slot over the next ten business days, the format, contact details and notes, and choose whether to share the figures behind the recommendation. Nothing is sent in the prototype.
+- **Reports.** A printable three-page A4 monthly report for each verified month. Page 3 is the roadmap: the three numbers, the projected score, the plan by quarter, progress so far, and disclosure of any Recycle Group work.
 - **Data.** CSV and JSON export for customers. YES can import CSV/JSON into months open for data entry. The demo can be reset.
 - **YES team.**
   - Data entry: open months across customers, the customer's documents beside the form, only the fields due that month (monthly; quarterly in Sep, Dec, Mar and Jun; annual in June; static registers carried forward), live calculations, warnings for figures more than 35% away from last year or last month, evidence attached or picked from the customer's documents.
-  - Verification queue, customer list, factor library and activity log.
+  - Verification queue, bookings (confirm, mark done, cancel), customer list, factor library and activity log.
   - The team also sees months waiting for verification on dashboards, marked provisional.
 
 ## How it is built
 
 - `assets/js/dictionary.js`: the YES Data Dictionary (fields, units, frequencies, sources, mandatory status, calculations and which scores they feed).
 - `assets/js/engine.js`: the calculation engine. It holds the factors, monthly calculations, seasonal baseline comparison, rolling 12 months, scores and targets.
-- `assets/js/demo-data.js`: a seeded generator for the fictional demo organisations.
+- `assets/js/recommend.js`: the recommendation rules, their assumed effects, the score at target and with YES help, and the roadmap projection.
+- `assets/js/demo-data.js`: a seeded generator for the fictional demo organisations, with demo bookings.
 - `assets/js/portal.js` with `assets/css/portal.css`: the portal app.
 - `assets/css/yes.css` holds the design system and `assets/css/pages.css` the marketing-page styles.
 - `_src/build.py`: wraps the page fragments in `_src/pages/` in the shared shell and writes the site.
@@ -78,8 +83,10 @@ The portal is a static single-page app. Everything is kept in the visitor's brow
   - Trend comparisons use the same calendar months of the baseline year.
   - Target-based categories are provisional until 12 months of data exist.
   - A month is provisional until a second YES analyst verifies it; customers see it once verified.
+- **Targets, potential and help.** The score at target treats each target in the profile as met. The score with YES help applies the published assumed effect of each recommended item. Items start two a quarter (booked items in their booked month) and build up over six months. Recycle Group work is disclosed, any provider can be used, and a YES analyst who runs a paid session does not enter or verify that customer's months.
 - **Claims.**
   - The score is self-declared under the published method. It is not an accredited rating, certification or offset.
+  - The score with YES help and the projection are estimates, not promises.
   - No carbon neutral, net zero or offset claims are made from YES figures.
 
 ## Before this becomes a real product
