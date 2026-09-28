@@ -151,22 +151,27 @@ window.YESDEMO = window.YESDEMO || {};
 
   function isoDay(k, day){ var p=E.parse(k); var nx=E.parse(E.addMonths(k,1)); return nx.y+"-"+(nx.m<9?"0":"")+(nx.m+1)+"-"+(day<10?"0":"")+day; }
 
+  var ENTRY = "Morgan Lee", VERIFY = "Chris Walker";
   function finish(recs, opt){
-    // statuses: verified up to verifiedTo, then submitted, then an open draft for the current month
+    // statuses: verified up to verifiedTo; later months entered by YES and waiting for a second analyst to verify
     recs.forEach(function(r){
-      r.submittedAt = isoDay(r.month, 9);
-      if(r.month <= opt.verifiedTo){ r.status="verified"; r.verifiedAt = isoDay(r.month, 16); r.verifiedBy = "YES data team"; }
+      r.enteredAt = isoDay(r.month, 9); r.enteredBy = ENTRY; r.submittedAt = r.enteredAt;
+      if(r.month <= opt.verifiedTo){ r.status="verified"; r.verifiedAt = isoDay(r.month, 16); r.verifiedBy = VERIFY; }
       else { r.status="submitted"; delete r.verifiedAt; Object.keys(r.evidence).forEach(function(c){ r.evidence[c].grade = null; r.evidence[c].pending = true; }); }
+      r.inbox = Object.keys(r.evidence).map(function(c){ return {name:r.evidence[c].name, cat:c, at:isoDay(r.month, 4), by:opt.contact, demo:true}; });
     });
     if(opt.draft){
+      // the month YES is keying now: the customer's documents are in, fuel and energy are entered, the rest is still to do
       var last = recs[recs.length-1];
       var dk = E.addMonths(last.month,1);
       var dv = {};
       opt.draftFields.forEach(function(id){ if(last.values[id]!==undefined && last.values[id]!=="") dv[id] = last.values[id]; });
-      // a partly filled month: fuel and electricity keyed in, the rest still to come
       if(dv.diesel_l) dv.diesel_l = Math.round(dv.diesel_l*1.03);
       if(dv.grid_kwh) dv.grid_kwh = Math.round(dv.grid_kwh*0.93);
-      recs.push({month:dk, values:dv, evidence:{}, status:"draft"});
+      var lab = E.label(dk);
+      var docs = [["fleet","Fuel card statement "+lab+".pdf"],["energy","Electricity retailer bills "+lab+".pdf"],["energy","Gas bill "+lab+".pdf"],["water","Water utility bill "+lab+".pdf"],["waste","Weighbridge dockets "+lab+".xlsx"],["community","Event registrations "+lab+".csv"]];
+      recs.push({month:dk, values:dv, evidence:{fleet:{name:docs[0][1], pending:true, grade:null, demo:true}, energy:{name:docs[1][1], pending:true, grade:null, demo:true}}, status:"draft", enteredBy:ENTRY,
+        inbox:docs.map(function(d,i){ return {name:d[1], cat:d[0], at:isoDay(dk, 3+i), by:opt.contact, demo:true}; })});
     }
     return recs;
   }
@@ -182,16 +187,16 @@ window.YESDEMO = window.YESDEMO || {};
   X.ORGS = [
     {id:"demo-shire", profile:{org_name:"Demo Shire Council", org_type:"Council", state:"VIC", residents:48000, employees:420, floor_area:38000, facilities:26, baseline_fy:"2024–25",
       target_emissions:40, target_renewable:80, target_diversion:70, target_fleet_ev:30, target_trees:3500, target_rehab_ha:12, target_participants:5000, target_native_ha:16},
-     gen:{seed:20240701, scale:1, start:"2024-07", end:"2026-08", verifiedTo:"2026-07", draft:true, fuelDecline:.06, petrolDecline:.12, elecDecline:.05, gasDecline:.12, waterDecline:.04, fleet:steps,
-          draftFields:["diesel_l","petrol_l","lpg_l","biodiesel_l","fleet_km","grid_kwh","renew_kwh","solar_gen_kwh","solar_use_kwh","solar_exp_kwh","gas_gj"]}},
+     gen:{seed:20240701, scale:1, start:"2024-07", end:"2026-08", verifiedTo:"2026-07", draft:false, contact:"Alex Morgan", fuelDecline:.06, petrolDecline:.12, elecDecline:.05, gasDecline:.12, waterDecline:.04, fleet:steps,
+          draftFields:[]}},
     {id:"demo-coastal", profile:{org_name:"Demo Coastal Council", org_type:"Council", state:"NSW", residents:92000, employees:760, floor_area:61000, facilities:41, baseline_fy:"2025–26",
       target_emissions:35, target_renewable:70, target_diversion:65, target_fleet_ev:25, target_trees:6000, target_rehab_ha:20, target_participants:9000, target_native_ha:28},
-     gen:{seed:20250701, scale:1.8, start:"2025-07", end:"2026-08", verifiedTo:"2026-06", draft:false, fuelDecline:.04, petrolDecline:.08, elecDecline:.03, gasDecline:.06, waterDecline:.03,
+     gen:{seed:20250701, scale:1.8, start:"2025-07", end:"2026-07", verifiedTo:"2026-06", draft:true, contact:"Sam Nguyen", fuelDecline:.04, petrolDecline:.08, elecDecline:.03, gasDecline:.06, waterDecline:.03,
           fleet:[["2025-07",{vd:80,vp:120,vh:30,vphev:6,vbev:12,td:70,te:0,plant:110,evp:6,evs:10,solar:900,solarSites:24,batt:0,stew:2}],["2026-01",{vd:78,vp:112,vh:34,vphev:6,vbev:22,td:69,te:1,plant:110,evp:10,evs:18,solar:900,solarSites:24,batt:0,stew:2}]],
-          draftFields:[]}},
+          draftFields:["diesel_l","petrol_l","lpg_l","biodiesel_l","fleet_km","grid_kwh","renew_kwh","solar_gen_kwh","solar_use_kwh","solar_exp_kwh","gas_gj"]}},
     {id:"demo-freight", profile:{org_name:"Demo Freight Co.", org_type:"Business", state:"QLD", residents:0, employees:180, floor_area:22000, facilities:4, baseline_fy:"2025–26",
-      target_emissions:25, target_renewable:50, target_diversion:75, target_fleet_ev:15, target_trees:400, target_rehab_ha:2, target_participants:300, target_native_ha:4},
-     gen:{seed:20260101, scale:0.35, start:"2026-01", end:"2026-08", verifiedTo:"2026-06", draft:false, fuelDecline:.03, petrolDecline:.05, elecDecline:.02, gasDecline:.02, waterDecline:.02,
+      target_emissions:25, target_renewable:50, target_diversion:75, target_fleet_ev:15, target_trees:400, target_rehab_ha:2, target_participants:900, target_native_ha:4},
+     gen:{seed:20260101, scale:0.35, start:"2026-01", end:"2026-08", verifiedTo:"2026-06", draft:false, contact:"Jordan Blake", fuelDecline:.03, petrolDecline:.05, elecDecline:.02, gasDecline:.02, waterDecline:.02,
           fleet:[["2026-01",{vd:6,vp:8,vh:2,vphev:0,vbev:1,td:42,te:2,plant:12,evp:0,evs:4,solar:300,solarSites:2,batt:0,stew:1}]],
           draftFields:[]}}
   ];
@@ -200,7 +205,8 @@ window.YESDEMO = window.YESDEMO || {};
     {id:"u-alex", name:"Alex Morgan", title:"Sustainability Coordinator", email:"alex.morgan@demo-shire.example", role:"customer", org:"demo-shire"},
     {id:"u-sam", name:"Sam Nguyen", title:"Fleet and Facilities Manager", email:"sam.nguyen@demo-coastal.example", role:"customer", org:"demo-coastal"},
     {id:"u-jordan", name:"Jordan Blake", title:"Operations Lead", email:"jordan.blake@demo-freight.example", role:"customer", org:"demo-freight"},
-    {id:"u-yes", name:"YES data team", title:"Verification analyst", email:"data@yes.example", role:"operator", org:null}
+    {id:"u-entry", name:"Morgan Lee", title:"Data analyst · enters the figures", email:"morgan.lee@yes.example", role:"operator", org:null, home:"#/ops/entry"},
+    {id:"u-verify", name:"Chris Walker", title:"Verification lead · checks and verifies", email:"chris.walker@yes.example", role:"operator", org:null, home:"#/ops"}
   ];
 
   X.build = function(){
@@ -210,6 +216,6 @@ window.YESDEMO = window.YESDEMO || {};
       var recs = finish(build(g), g);
       orgs[o.id] = {id:o.id, profile:JSON.parse(JSON.stringify(o.profile)), records:recs, demo:true};
     });
-    return {v:1, created:new Date().toISOString(), orgs:orgs, users:X.USERS.slice(), session:null, audit:[]};
+    return {v:2, created:new Date().toISOString(), orgs:orgs, users:X.USERS.slice(), session:null, audit:[]};
   };
 })(window.YESDEMO, window.YESD, window.YESE);

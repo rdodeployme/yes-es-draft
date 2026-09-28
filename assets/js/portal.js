@@ -6,7 +6,7 @@
 (function(){
 'use strict';
 var D = window.YESD, E = window.YESE, X = window.YESDEMO;
-var KEY = 'yes-es-portal-v1';
+var KEY = 'yes-es-portal-v2';
 var app = document.getElementById('app');
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var ui = { flash:null, flashT:null, loginTab:'customer', confirmSubmit:false, confirmReset:false, importPreview:null };
@@ -35,7 +35,7 @@ function field(id){ return D.FIELD[id] || (D.PROFILE.filter(function(f){return f
 
 /* ------------------------------------------------------------------ store */
 function load(){
-  try{ var s=JSON.parse(localStorage.getItem(KEY)); if(s && s.v===1 && s.orgs && s.users) return s; }catch(e){}
+  try{ var s=JSON.parse(localStorage.getItem(KEY)); if(s && s.v===2 && s.orgs && s.users) return s; }catch(e){}
   var fresh = X.build(); persist(fresh); return fresh;
 }
 function persist(s){
@@ -53,8 +53,8 @@ function sorted(o){ return o.records.slice().sort(function(a,b){ return a.month<
 function log(action, detail, orgId){ var u=me(); state.audit=state.audit||[]; state.audit.unshift({at:isoNow(), by:u?u.name:'', role:u?u.role:'', org:orgId||ctxOrgId(), action:action, detail:detail||''}); state.audit=state.audit.slice(0,400); }
 function flash(m,t){ ui.flash={m:m,t:t||'ok'}; clearTimeout(ui.flashT); ui.flashT=setTimeout(function(){ ui.flash=null; var f=$('.flash'); if(f) f.remove(); },3200); var f=$('.flash'); if(f) f.remove(); var el=document.createElement('div'); el.className='flash'+(t==='err'?' err':''); el.setAttribute('role','status'); el.textContent=m; document.body.appendChild(el); }
 
-/* series: verified and submitted months only (drafts and returned months are not part of the record yet) */
-function seriesOf(o){ return E.series(o.records.filter(function(r){ return r.status==='verified'||r.status==='submitted'; }), o.profile); }
+/* series: customers see verified months only; the YES team also sees months entered and waiting for verification (provisional) */
+function seriesOf(o){ var op=isOp(); return E.series(o.records.filter(function(r){ return r.status==='verified' || (op && r.status==='submitted'); }), o.profile); }
 function monthOf(S,k){ var ms=S.months; if(!ms.length) return null; if(!k) return ms[ms.length-1]; for(var i=0;i<ms.length;i++) if(ms[i].month===k) return ms[i]; return ms[ms.length-1]; }
 function idxOf(S,k){ for(var i=0;i<S.months.length;i++) if(S.months[i].month===k) return i; return -1; }
 
@@ -116,30 +116,33 @@ function stackBars(rows,o){
   return s+'</svg>';
 }
 function ring(v,size,light){ return '<div class="score-ring'+(light?' light':'')+'" style="--v:'+(v==null?0:v)+';--size:'+(size||170)+'px"><div class="in"><div class="v">'+(v==null?'—':v)+'</div><div class="of">out of 100</div></div></div>'; }
-function statusChip(st){ var L={verified:'Verified',submitted:'Awaiting YES review',draft:'Draft',returned:'Returned for changes'}; return '<span class="st st-'+esc(st)+'">'+(L[st]||esc(st))+'</span>'; }
+function statusChip(st){ var L={verified:'Verified',submitted:'Awaiting verification',draft:'Being entered',returned:'Returned to data entry'}; return '<span class="st st-'+esc(st)+'">'+(L[st]||esc(st))+'</span>'; }
 
 /* ------------------------------------------------------------------ shell */
 function openMonths(o){ return sorted(o).filter(function(r){ return r.status==='draft'||r.status==='returned'; }); }
+function entryQueue(){ var q=[]; Object.keys(state.orgs).forEach(function(id){ state.orgs[id].records.forEach(function(r){ if(r.status==='draft'||r.status==='returned') q.push({org:id, rec:r}); }); }); return q.sort(function(a,b){ return a.rec.month<b.rec.month?-1:1; }); }
 function queue(){ var q=[]; Object.keys(state.orgs).forEach(function(id){ state.orgs[id].records.forEach(function(r){ if(r.status==='submitted') q.push({org:id, rec:r}); }); }); return q.sort(function(a,b){ return a.rec.month<b.rec.month?-1:1; }); }
 
 function shell(active, body){
   var u=me(), o=org(), op=isOp();
   var links = op ? [
       ['grp','YES team'],
-      ['#/ops','Review queue','ops', queue().length||''],
+      ['#/ops/entry','Data entry','entry', entryQueue().length||''],
+      ['#/ops','Verification','ops', queue().length||''],
       ['#/ops/customers','Customers','customers'],
       ['#/ops/factors','Factor library','factors'],
       ['#/ops/activity','Activity','activity'],
       ['grp','Viewing '+(o?o.profile.org_name:'')],
       ['#/dashboard','Dashboard','dashboard'],
       ['#/reports','Reports','reports'],
-      ['#/submit','Submissions','submit'],
-      ['#/organisation','Organisation','organisation']
+      ['#/documents','Documents','documents'],
+      ['#/organisation','Organisation','organisation'],
+      ['#/data','Data and export','data']
     ] : [
       ['grp','Reporting'],
       ['#/dashboard','Dashboard','dashboard'],
-      ['#/submit','Submit data','submit', openMonths(o).length||''],
       ['#/reports','Reports','reports'],
+      ['#/documents','Send documents','documents'],
       ['grp','Account'],
       ['#/organisation','Organisation','organisation'],
       ['#/data','Data and export','data']
@@ -153,7 +156,7 @@ function shell(active, body){
    + '<nav class="snav">'+nav+'</nav>'
    + '<div class="foot">Prototype. Your data stays in this browser.<br><button class="btn btn-ghost btn-sm" type="button" data-act="signout" style="color:var(--silver-2)">Sign out</button></div>'
    + '</aside><main class="main" id="main"><div class="content">'
-   + (op && ['dashboard','reports','submit','organisation','category','report'].indexOf(active)>=0 ? '<div class="banner grey no-print"><span>Viewing <b>'+esc(o.profile.org_name)+'</b> as the YES team. Customer figures are read-only here; use the review queue to verify.</span><a class="btn btn-ghost btn-sm" href="#/ops/customers">Switch customer</a></div>' : '')
+   + (op && ['dashboard','reports','documents','organisation','category','report','data'].indexOf(active)>=0 ? '<div class="banner grey no-print"><span>Viewing <b>'+esc(o.profile.org_name)+'</b> as the YES team. The customer sees verified months only; months waiting for verification show here as provisional.</span><a class="btn btn-ghost btn-sm" href="#/ops/customers">Switch customer</a></div>' : '')
    + body + '</div></main></div>';
 }
 
@@ -163,8 +166,8 @@ function vLogin(){
   var list = accts.map(function(u){ var o=u.org?state.orgs[u.org]:null; return '<button class="acct" type="button" data-act="login" data-user="'+esc(u.id)+'"><span class="av">'+esc(initials(u.name))+'</span><span class="nm">'+esc(u.name)+'</span><span class="go" aria-hidden="true">→</span><span class="ds">'+esc(u.title)+(o?' · '+esc(o.profile.org_name):'')+'</span></button>'; }).join('');
   return '<div class="login"><div class="l"><div class="bg" aria-hidden="true"><video data-bgv muted loop playsinline preload="none" poster="../assets/video/silver-720.webp"><source data-src="../assets/video/silver-720.mp4" type="video/mp4"></video></div>'
    + '<a class="brand" href="../"><span class="mark silver" style="font-size:30px">YES</span><span class="full">Yindyamarra<br>Environmental Sustainability</span></a>'
-   + '<div><p class="eyebrow">Customer portal</p><h1><span class="silver">Report once a month.</span> YES does the rest.</h1><p class="lead" style="margin-top:20px;color:var(--silver-2)">Enter litres, kilowatt-hours, kilolitres, tonnes and hectares. Attach the bill or docket. YES calculates the emissions, the rates, the trends and your Yindyamarra Environmental Score.</p></div>'
-   + '<p class="small" style="color:var(--silver-4);max-width:52ch">Prototype with fictional demo organisations. There are no passwords here: in production each customer signs in with their own account, and YES staff sign in separately.</p></div>'
+   + '<div><p class="eyebrow">Customer portal</p><h1><span class="silver">Send the paperwork once a month.</span> YES does the rest.</h1><p class="lead" style="margin-top:20px;color:var(--silver-2)">Upload your bills, dockets and registers. YES enters every figure, grades the evidence and has a second analyst verify the month, then calculates the emissions, the rates, the trends and your Yindyamarra Environmental Score.</p></div>'
+   + '<p class="small" style="color:var(--silver-4);max-width:52ch">Prototype with fictional demo organisations. There are no passwords here: in production each customer signs in with their own account, and YES staff sign in separately. Customers see their verified reports and send documents; YES staff enter and verify the figures.</p></div>'
    + '<div class="r"><div class="box"><p class="kicker">Sign in</p><h2 style="font-size:30px;margin:8px 0 18px">Choose a demo account</h2>'
    + '<div class="tabs" role="tablist" style="margin-bottom:18px"><button type="button" role="tab" data-act="ltab" data-tab="customer" aria-selected="'+(ui.loginTab==='customer')+'">Council or business</button><button type="button" role="tab" data-act="ltab" data-tab="operator" aria-selected="'+(ui.loginTab==='operator')+'">YES team</button></div>'
    + list
@@ -175,14 +178,23 @@ function vLogin(){
 /* ------------------------------------------------------------------ dashboard */
 function vDashboard(q){
   var o=org(), S=seriesOf(o), m=monthOf(S,q.m);
-  if(!m) return shell('dashboard','<div class="pg-head"><div><h1>'+esc(o.profile.org_name)+'</h1></div></div><div class="empty">No months have been submitted yet. <a class="link" href="#/submit">Start your first month</a>.</div>');
+  if(!m) return shell('dashboard','<div class="pg-head"><div><h1>'+esc(o.profile.org_name)+'</h1></div></div><div class="empty">'+(isOp()?'No month has been verified or entered yet. <a class="link" href="#/ops/entry">Open data entry</a>.':'Your first verified month will appear here. <a class="link" href="#/documents">Send your documents</a> and YES will enter them.')+'</div>');
   var i=idxOf(S,m.month), R=m.r12, T=S.targets, p=o.profile;
   var opts = S.months.slice().reverse().map(function(x){ return '<option value="'+x.month+'"'+(x.month===m.month?' selected':'')+'>'+mLabel(x.month)+(x.status!=='verified'?' · provisional':'')+'</option>'; }).join('');
   var head = '<div class="pg-head"><div><p class="kicker">Dashboard</p><h1>'+esc(p.org_name)+'</h1><p class="pg-sub">'+esc(p.org_type)+' · '+esc(p.state)+(p.residents?' · '+fmt(p.residents)+' residents':'')+' · '+fmt(p.employees)+' FTE · baseline '+esc(p.baseline_fy)+'</p></div>'
     + '<div class="pg-actions"><label class="vh" for="dm">Month</label><select id="dm" data-act="dash-month">'+opts+'</select><a class="btn btn-ink btn-sm" href="#/report/'+m.month+'">Monthly report</a></div></div>';
-  // open month banner
-  var om=openMonths(o), banner='';
-  if(om.length && !isOp()){ var r0=om[om.length-1]; var prog=progressOf(o,r0); banner='<div class="banner no-print"><span><b>'+mLabel(r0.month)+' is open.</b> '+prog.req+' of '+prog.reqDue+' required figures entered · due '+longDate(dueDate(r0.month))+(r0.status==='returned'?' · <b>returned by YES with a note</b>':'')+'</span><a class="btn btn-primary btn-sm" href="#/submit/'+r0.month+'">Continue '+mShort(r0.month)+'</a></div>'; }
+  // where the next month stands
+  var banner='';
+  var pend=sorted(o).filter(function(r){ return r.status!=='verified'; });
+  if(isOp()){
+    var om=openMonths(o);
+    if(om.length){ var r0=om[om.length-1], prog=progressOf(o,r0); banner='<div class="banner no-print"><span><b>'+mLabel(r0.month)+' is open for data entry.</b> '+prog.req+' of '+prog.reqDue+' required figures entered · '+((r0.inbox||[]).length)+' documents from the customer'+(r0.status==='returned'?' · <b>returned by verification with a note</b>':'')+'</span><a class="btn btn-primary btn-sm" href="#/entry/'+o.id+'/'+r0.month+'">Enter figures</a></div>'; }
+  } else {
+    var lastP=pend[pend.length-1];
+    if(lastP && lastP.status==='submitted') banner='<div class="banner grey no-print"><span><b>'+mLabel(lastP.month)+' is entered and with YES for verification.</b> Its report appears here once a second analyst has verified it.</span><a class="btn btn-ghost btn-sm" href="#/documents" style="color:var(--ink)">Send documents</a></div>';
+    else if(lastP) banner='<div class="banner grey no-print"><span><b>YES is entering '+mLabel(lastP.month)+'</b> from the '+((lastP.inbox||[]).length)+' document'+(((lastP.inbox||[]).length)===1?'':'s')+' you sent.</span><a class="btn btn-ghost btn-sm" href="#/documents" style="color:var(--ink)">Send documents</a></div>';
+    var rsAll=sorted(o), dueK=rsAll.length?E.addMonths(rsAll[rsAll.length-1].month,1):E.addMonths(nowKey(),-1); if(dueK<=nowKey() && !rec(o,dueK)) banner+='<div class="banner no-print"><span><b>Documents for '+mLabel(dueK)+' are due '+longDate(dueDate(dueK))+'.</b> Fuel card statements, energy and water bills, waste dockets and registers.</span><a class="btn btn-primary btn-sm" href="#/documents">Send documents</a></div>';
+  }
   // hero
   var yoyTxt = m.yoy!=null ? delta(m.yoy)+' <span>on '+mLabel(S.months[i-12].month)+'</span>' : '<span class="muted">Year-on-year change after 12 months</span>';
   var momTxt = m.mom!=null ? delta(m.mom)+' <span>on '+mLabel(S.months[i-1].month)+'</span>' : '';
@@ -238,7 +250,7 @@ function vDashboard(q){
     + '<div class="legend"><span><i class="lg-diesel"></i>Diesel</span><span><i class="lg-petrol"></i>Petrol</span><span><i class="lg-other"></i>LPG and biodiesel</span></div></div>';
   // quality
   var r=rec(o,m.month), ev=r.evidence||{};
-  var qual = '<div class="panel"><h3>Data quality · '+mLabel(m.month)+'</h3><dl class="kv" style="margin-top:14px"><dt>Required figures supplied</dt><dd>'+pct(m.complete_pct,0)+'</dd><dt>Figures backed by evidence</dt><dd>'+pct(m.evidence_pct,0)+'</dd><dt>Submitted</dt><dd>'+longDate(r.submittedAt)+'</dd><dt>Verified</dt><dd>'+(r.verifiedAt?longDate(r.verifiedAt):'Not yet')+'</dd></dl>'
+  var qual = '<div class="panel"><h3>Data quality · '+mLabel(m.month)+'</h3><dl class="kv" style="margin-top:14px"><dt>Required figures supplied</dt><dd>'+pct(m.complete_pct,0)+'</dd><dt>Figures backed by evidence</dt><dd>'+pct(m.evidence_pct,0)+'</dd><dt>Entered by YES</dt><dd>'+longDate(r.enteredAt||r.submittedAt)+'</dd><dt>Verified by YES</dt><dd>'+(r.verifiedAt?longDate(r.verifiedAt):'Not yet')+'</dd></dl>'
     + '<div class="pill-row" style="margin-top:16px">'+D.CATEGORIES.filter(function(c){ return c.k!=='carbon'; }).map(function(c){ var e=ev[c.k]; var g=e&&e.grade?e.grade:(e?'…':'—'); return '<span class="chip" title="'+esc(e?(e.name||''):'No evidence attached')+'"><span class="grade '+(e&&e.grade?e.grade:'none')+'" style="width:20px;height:20px;font-size:11px">'+g+'</span>'+esc(c.short)+'</span>'; }).join('')+'</div>'
     + '<p class="small muted" style="margin:12px 0 0">Evidence grades: A primary document (bill, docket, certificate) · B system extract or reconciled record · C estimate or unsupported · … awaiting YES.</p></div>';
   return shell('dashboard', head + banner + hero + tiles + '<div class="row2" style="margin-top:28px">'+emis+targ+'</div>' + metrics + '<div class="row2" style="margin-top:22px">'+fleetP+qual+'</div>');
@@ -273,25 +285,38 @@ function nextStartable(o){ var rs=sorted(o); var last=rs[rs.length-1]; var nk = 
 function cmpVals(o,k,id){ var p=rec(o,E.addMonths(k,-1)), y=rec(o,E.addMonths(k,-12)); var f=field(id); var pv=p&&p.values?p.values[id]:null, yv=y&&y.values?y.values[id]:null; if(f&&f.freq==='S'){ pv=carried(o,E.addMonths(k,-1),id); yv=carried(o,E.addMonths(k,-12),id); } return {prev:isNum(pv)?+pv:null, ly:isNum(yv)?+yv:null, pk:E.addMonths(k,-1), yk:E.addMonths(k,-12)}; }
 function warnFor(o,k,id,v){ if(!isNum(v)) return ''; v=+v; var c=cmpVals(o,k,id), f=field(id); if(f.kind==='percent' && (v<0||v>100)) return 'A percentage must be between 0 and 100.'; if(v<0) return 'Must be zero or more.'; var ref=c.ly!=null&&c.ly>0?c.ly:(c.prev!=null&&c.prev>0?c.prev:null); var refK=c.ly!=null&&c.ly>0?c.yk:c.pk; if(ref==null||f.freq==='S') return ''; var ch=(v-ref)/ref*100; if(Math.abs(ch)>35) return fmt(Math.abs(ch),0)+'% '+(ch>0?'higher':'lower')+' than '+mLabel(refK)+' ('+fmtF(f,ref)+' '+f.unit+'). Please check before submitting.'; return ''; }
 
-function vSubmitIndex(){
-  var o=org(), om=openMonths(o), ns=nextStartable(o);
-  var rows = sorted(o).slice().reverse().slice(0,14).map(function(r){ var pr=progressOf(o,r); return '<tr><td><a class="rowlink" href="#/submit/'+r.month+'">'+mLabel(r.month)+'</a></td><td>'+statusChip(r.status)+'</td><td class="num">'+pr.req+' / '+pr.reqDue+'</td><td>'+longDate(dueDate(r.month))+'</td><td>'+(r.submittedAt?longDate(r.submittedAt):'—')+'</td><td>'+(r.verifiedAt?longDate(r.verifiedAt):'—')+'</td></tr>'; }).join('');
-  var body='<div class="pg-head"><div><p class="kicker">'+(isOp()?'Submissions':'Submit data')+'</p><h1>'+(isOp()?'Monthly submissions':'Monthly figures')+'</h1><p class="pg-sub">Figures for each month are due by the 15th of the following month.</p></div></div>'
-    + (om.length ? '<div class="stack">'+om.map(function(r){ var pr=progressOf(o,r); return '<div class="panel" style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center"><div><p class="kicker">'+statusChip(r.status)+'</p><h3 style="margin-top:8px">'+mLabel(r.month)+'</h3><p class="sec-s" style="margin:6px 0 0">'+pr.req+' of '+pr.reqDue+' required figures · due '+longDate(dueDate(r.month))+'</p><div class="progress" style="width:260px"><i style="width:'+(pr.reqDue?pr.req/pr.reqDue*100:0)+'%"></i></div></div><a class="btn btn-primary" href="#/submit/'+r.month+'">'+(isOp()?'View':'Continue')+' {{ARROW}}</a></div>'; }).join('')+'</div>'
-      : '<div class="panel"><h3>Nothing open right now</h3><p class="sec-s" style="margin-top:6px">Every month up to '+mLabel(sorted(o).length?sorted(o)[sorted(o).length-1].month:nowKey())+' has been submitted.</p>'+(ns&&!isOp()?'<button class="btn btn-primary" type="button" data-act="start-month" data-month="'+ns+'">Start '+mLabel(ns)+'</button>':'')+'</div>')
-    + '<h2 class="sec-t" style="margin-top:28px">Recent months</h2><div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Month</th><th>Status</th><th class="r">Required figures</th><th>Due</th><th>Submitted</th><th>Verified</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
-  return shell('submit', body.replace('{{ARROW}}','→'));
+function docOpenBtn(d){ return d.key ? '<button class="btn btn-ghost btn-sm" type="button" data-act="ev-open" data-key="'+esc(d.key)+'" style="color:var(--ink)">Open</button>' : '<span class="small muted">demo, not stored</span>'; }
+function inboxList(r,opts){
+  opts=opts||{}; var docs=(r.inbox||[]).slice().sort(function(a,b){ return a.at<b.at?-1:1; });
+  if(!docs.length) return '<p class="sec-s" style="margin:6px 0 0">No documents yet.</p>';
+  return '<div class="tbl-wrap" style="margin-top:10px"><table class="tbl compact"><thead><tr><th>Document</th><th>About</th><th>Sent</th><th>By</th><th></th></tr></thead><tbody>'
+    + docs.map(function(d){ return '<tr><td><b style="font-weight:600">'+esc(d.name)+'</b>'+(d.size?'<div class="small muted">'+fmt(Math.max(1,d.size/1024),0)+' KB</div>':'')+'</td><td>'+esc(d.cat&&D.CAT[d.cat]?D.CAT[d.cat].short:'Not sure')+'</td><td>'+longDate(d.at)+'</td><td>'+esc(d.by||'')+'</td><td>'+docOpenBtn(d)+'</td></tr>'; }).join('')
+    + '</tbody></table></div>';
+}
+
+/* YES data entry: every open month across customers */
+function vEntryQueue(){
+  var q=entryQueue();
+  var starts=Object.keys(state.orgs).map(function(id){ var o=state.orgs[id], ns=nextStartable(o); return ns?{org:id,month:ns}:null; }).filter(Boolean);
+  function tr(x){ var o=state.orgs[x.org], r=x.rec, pr=progressOf(o,r); return '<tr><td><b>'+esc(o.profile.org_name)+'</b><div class="small muted">'+esc(o.profile.org_type)+' · '+esc(o.profile.state)+'</div></td><td>'+mLabel(r.month)+'</td><td>'+statusChip(r.status)+'</td><td class="num">'+((r.inbox||[]).length)+'</td><td class="num">'+pr.req+' / '+pr.reqDue+'</td><td>'+longDate(dueDate(r.month))+'</td><td><a class="btn btn-primary btn-sm" href="#/entry/'+x.org+'/'+r.month+'">Enter figures</a></td></tr>'; }
+  var sent=[]; Object.keys(state.orgs).forEach(function(id){ state.orgs[id].records.forEach(function(r){ if(r.status==='submitted') sent.push({org:id,rec:r}); }); });
+  var body='<div class="pg-head"><div><p class="kicker">YES team</p><h1>Data entry</h1><p class="pg-sub">Customers send their bills, dockets and registers. YES keys every figure from them, attaches the evidence and sends the month to a second analyst to verify. Documents are due by the 15th of the following month.</p></div></div>'
+    + (q.length?'<div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Organisation</th><th>Month</th><th>Status</th><th class="r">Documents</th><th class="r">Required figures</th><th>Documents due</th><th></th></tr></thead><tbody>'+q.map(tr).join('')+'</tbody></table></div>':'<div class="empty">No months are open for data entry.</div>')
+    + (starts.length?'<h2 class="sec-t" style="margin-top:28px">Start a month</h2><p class="sec-s">Open the next month for a customer when their documents arrive by email or they upload them.</p><div class="pill-row">'+starts.map(function(x){ return '<button class="btn btn-ghost btn-sm" type="button" data-act="start-month" data-org="'+x.org+'" data-month="'+x.month+'" style="color:var(--ink)">'+esc(state.orgs[x.org].profile.org_name)+' · '+mLabel(x.month)+'</button>'; }).join('')+'</div>':'')
+    + (sent.length?'<h2 class="sec-t" style="margin-top:28px">With verification</h2><div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Organisation</th><th>Month</th><th>Entered by</th><th>Entered</th></tr></thead><tbody>'+sent.map(function(x){ return '<tr><td>'+esc(state.orgs[x.org].profile.org_name)+'</td><td>'+mLabel(x.rec.month)+'</td><td>'+esc(x.rec.enteredBy||'')+'</td><td>'+longDate(x.rec.enteredAt||x.rec.submittedAt)+'</td></tr>'; }).join('')+'</tbody></table></div>':'');
+  return shell('entry', body);
 }
 
 function vSubmit(k,q){
   var o=org(), r=rec(o,k); if(!r) return vNotFound();
-  var editable = !isOp() && (r.status==='draft'||r.status==='returned');
+  var editable = isOp() && (r.status==='draft'||r.status==='returned');
   var due=dueFields(o,k), dueIds={}; due.forEach(function(f){ dueIds[f.id]=1; });
   var cats=D.CATEGORIES.filter(function(c){ return c.k!=='carbon'; });
   var pr=progressOf(o,r);
+  var base='#/entry/'+o.id+'/'+k;
   var cur=q.c && D.CAT[q.c] ? q.c : null;
   if(!cur){ cur = (cats.filter(function(c){ return pr.missing.some(function(f){ return f.cat===c.k; }); })[0]||cats[0]).k; }
-  var catNav = cats.map(function(c){ var fs=due.filter(function(f){ return f.cat===c.k; }); var rq=fs.filter(function(f){ return f.req; }); var ok=rq.filter(function(f){ return isNum(r.values[f.id]); }).length; var done = rq.length ? ok===rq.length : fs.some(function(f){ return r.values[f.id]!==undefined&&r.values[f.id]!==''; }); return '<a href="#/submit/'+k+'?c='+c.k+'" aria-current="'+(c.k===cur)+'"><span>'+esc(c.short)+'</span><span class="c'+(done?' ok':'')+'" data-cc="'+c.k+'">'+(rq.length?ok+'/'+rq.length:(done?'✓':fs.length))+'</span></a>'; }).join('');
+  var catNav = cats.map(function(c){ var fs=due.filter(function(f){ return f.cat===c.k; }); var rq=fs.filter(function(f){ return f.req; }); var ok=rq.filter(function(f){ return isNum(r.values[f.id]); }).length; var done = rq.length ? ok===rq.length : fs.some(function(f){ return r.values[f.id]!==undefined&&r.values[f.id]!==''; }); return '<a href="'+base+'?c='+c.k+'" aria-current="'+(c.k===cur)+'"><span>'+esc(c.short)+'</span><span class="c'+(done?' ok':'')+'" data-cc="'+c.k+'">'+(rq.length?ok+'/'+rq.length:(done?'✓':fs.length))+'</span></a>'; }).join('');
   // field groups for the current category
   var inCat=D.INPUTS.filter(function(f){ return f.cat===cur; });
   var groups=[['M','This month'],['Q','This quarter'],['A','This year'],['S','Registers · confirm or update when something changes']];
@@ -302,21 +327,41 @@ function vSubmit(k,q){
   }).join('');
   if(!form) form='<p class="sec-s">Nothing in this category is due for '+mLabel(k)+'. Quarterly figures are reported in September, December, March and June; annual figures in June.</p>';
   var ev=(r.evidence||{})[cur];
-  var evBox = '<div class="ev" data-drop="'+cur+'"><div class="t">'+(ev?'<b>'+esc(ev.name)+'</b>'+(ev.size?fmt(Math.max(1,ev.size/1024),0)+' KB · ':'')+(ev.grade?'Graded '+esc(ev.grade)+' by YES':'Awaiting YES grade'):'<b>Evidence for '+esc(D.CAT[cur].name)+'</b>Attach the bill, docket, statement or register extract behind these figures (PDF, image or spreadsheet).')+'</div>'
-    + (editable?'<div class="btn-row"><label class="btn btn-ghost btn-sm" style="color:var(--ink)">'+(ev?'Replace file':'Attach file')+'<input type="file" data-act="ev-file" data-cat="'+cur+'" accept=".pdf,.png,.jpg,.jpeg,.webp,.csv,.xlsx,.xls,.doc,.docx,.txt"></label>'+(ev?'<button class="btn btn-ghost btn-sm" type="button" data-act="ev-remove" data-cat="'+cur+'" style="color:var(--ink)">Remove</button>':'')+'</div>':(ev&&!ev.demo?'<button class="btn btn-ghost btn-sm" type="button" data-act="ev-open" data-key="'+esc(evKey(o.id,k,cur))+'" style="color:var(--ink)">Open file</button>':''))
+  var catDocs=(r.inbox||[]).filter(function(d){ return !d.cat || d.cat===cur; });
+  var pick = editable && (r.inbox||[]).length ? '<select class="gsel" data-act="ev-pick" data-cat="'+cur+'" aria-label="Use a document the customer sent"><option value="">Use a customer document…</option>'+(r.inbox||[]).map(function(d,i){ return '<option value="'+i+'"'+(catDocs.indexOf(d)>=0?'':' ')+'>'+esc(d.name)+'</option>'; }).join('')+'</select>' : '';
+  var evBox = '<div class="ev" data-drop="'+cur+'"><div class="t">'+(ev?'<b>'+esc(ev.name)+'</b>'+(ev.size?fmt(Math.max(1,ev.size/1024),0)+' KB · ':'')+(ev.grade?'Graded '+esc(ev.grade):'Grade given at verification'):'<b>Evidence for '+esc(D.CAT[cur].name)+'</b>Attach the bill, docket, statement or register extract behind these figures, or pick one the customer sent.')+'</div>'
+    + (editable?'<div class="btn-row">'+pick+'<label class="btn btn-ghost btn-sm" style="color:var(--ink)">'+(ev?'Replace file':'Attach file')+'<input type="file" data-act="ev-file" data-cat="'+cur+'" accept=".pdf,.png,.jpg,.jpeg,.webp,.csv,.xlsx,.xls,.doc,.docx,.txt"></label>'+(ev?'<button class="btn btn-ghost btn-sm" type="button" data-act="ev-remove" data-cat="'+cur+'" style="color:var(--ink)">Remove</button>':'')+'</div>':(ev&&!ev.demo?'<button class="btn btn-ghost btn-sm" type="button" data-act="ev-open" data-key="'+esc(ev.key||evKey(o.id,k,cur))+'" style="color:var(--ink)">Open file</button>':''))
     + '</div>';
-  var returned = r.status==='returned' && r.notes && r.notes.length ? '<div class="note-box" style="margin-bottom:16px"><b>Returned by YES on '+longDate(r.notes[r.notes.length-1].at)+':</b> '+esc(r.notes[r.notes.length-1].text)+'</div>' : '';
-  var head='<div class="pg-head"><div><p class="kicker"><a class="link" href="#/submit">'+(isOp()?'Submissions':'Submit data')+'</a> · '+statusChip(r.status)+'</p><h1>'+mLabel(k)+'</h1><p class="pg-sub">Due '+longDate(dueDate(k))+(r.submittedAt?' · submitted '+longDate(r.submittedAt):'')+(r.verifiedAt?' · verified '+longDate(r.verifiedAt):'')+'</p></div>'
+  var returned = r.status==='returned' && r.notes && r.notes.length ? '<div class="note-box" style="margin-bottom:16px"><b>Returned by '+esc(r.notes[r.notes.length-1].by||'verification')+' on '+longDate(r.notes[r.notes.length-1].at)+':</b> '+esc(r.notes[r.notes.length-1].text)+'</div>' : '';
+  var docsPanel = '<div class="panel" style="margin-bottom:18px"><h3>Documents from '+esc(o.profile.org_name)+'</h3>'+inboxList(r)+'</div>';
+  var head='<div class="pg-head"><div><p class="kicker"><a class="link" href="#/ops/entry">Data entry</a> · '+statusChip(r.status)+'</p><h1>'+esc(o.profile.org_name)+' · '+mLabel(k)+'</h1><p class="pg-sub">Documents due '+longDate(dueDate(k))+(r.enteredAt&&r.status!=='draft'?' · entered '+longDate(r.enteredAt)+(r.enteredBy?' by '+esc(r.enteredBy):''):'')+(r.verifiedAt?' · verified '+longDate(r.verifiedAt)+(r.verifiedBy?' by '+esc(r.verifiedBy):''):'')+'</p></div>'
     + '<div class="pg-actions" style="min-width:260px;display:block"><div class="small"><b id="prog-t">'+pr.req+' of '+pr.reqDue+'</b> required figures entered</div><div class="progress"><i id="prog-b" style="width:'+(pr.reqDue?pr.req/pr.reqDue*100:0)+'%"></i></div><div class="small muted" style="margin-top:6px" id="saved">'+(editable?'Saved in this browser as you type':'Read-only')+'</div></div></div>';
   var submitBox='';
   if(editable){
     var miss=pr.missing;
     submitBox = '<div class="panel" style="margin-top:22px" id="submit-box">'+(ui.confirmSubmit
-      ? '<h3>Submit '+mLabel(k)+' to YES</h3>'+(miss.length?'<p class="sec-s" style="margin-top:6px">'+miss.length+' required figure'+(miss.length>1?'s are':' is')+' still missing:</p><ul class="missing">'+miss.slice(0,12).map(function(f){ return '<li><a class="link" href="#/submit/'+k+'?c='+f.cat+'">'+esc(f.name)+'</a> <span class="muted">('+esc(D.CAT[f.cat].short)+')</span></li>'; }).join('')+(miss.length>12?'<li>and '+(miss.length-12)+' more</li>':'')+'</ul>':'<p class="sec-s" style="margin-top:6px">All '+pr.reqDue+' required figures are in. Evidence attached for '+Object.keys(r.evidence||{}).length+' of '+cats.length+' categories.</p><label style="display:flex;gap:10px;align-items:flex-start;font-size:14.5px;margin:12px 0 16px"><input type="checkbox" id="attest" style="margin-top:4px"> <span>I confirm these figures are complete and correct to the best of my knowledge, and the attached documents support them.</span></label><div class="btn-row"><button class="btn btn-primary" type="button" data-act="submit-month" data-month="'+k+'">Submit to YES</button><button class="btn btn-ghost" type="button" data-act="submit-cancel" style="color:var(--ink)">Not yet</button></div>')
-      : '<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center"><div><h3>Ready when you are</h3><p class="sec-s" style="margin:6px 0 0">YES checks every figure against last month and the same month last year, grades the evidence and verifies the month. Until then your score for '+mLabel(k)+' is provisional.</p></div><button class="btn btn-primary" type="button" data-act="submit-ask">Review and submit</button></div>')+'</div>';
+      ? '<h3>Send '+mLabel(k)+' for verification</h3>'+(miss.length?'<p class="sec-s" style="margin-top:6px">'+miss.length+' required figure'+(miss.length>1?'s are':' is')+' still missing:</p><ul class="missing">'+miss.slice(0,12).map(function(f){ return '<li><a class="link" href="'+base+'?c='+f.cat+'">'+esc(f.name)+'</a> <span class="muted">('+esc(D.CAT[f.cat].short)+')</span></li>'; }).join('')+(miss.length>12?'<li>and '+(miss.length-12)+' more</li>':'')+'</ul>':'<p class="sec-s" style="margin-top:6px">All '+pr.reqDue+' required figures are in. Evidence attached for '+Object.keys(r.evidence||{}).length+' of '+cats.length+' categories.</p><label style="display:flex;gap:10px;align-items:flex-start;font-size:14.5px;margin:12px 0 16px"><input type="checkbox" id="attest" style="margin-top:4px"> <span>I entered these figures from the customer\'s documents and attached the evidence for each category. A different analyst will verify them.</span></label><div class="btn-row"><button class="btn btn-primary" type="button" data-act="submit-month" data-month="'+k+'">Send for verification</button><button class="btn btn-ghost" type="button" data-act="submit-cancel" style="color:var(--ink)">Not yet</button></div>')
+      : '<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center"><div><h3>Finished keying?</h3><p class="sec-s" style="margin:6px 0 0">A second analyst checks every figure against the documents, grades the evidence and verifies the month. The customer sees '+mLabel(k)+' once it is verified.</p></div><button class="btn btn-primary" type="button" data-act="submit-ask">Check and send</button></div>')+'</div>';
   }
-  var body = head + returned + '<div class="subm"><nav class="catnav" aria-label="Categories">'+catNav+'</nav><div><div class="panel"><h2 class="sec-t">'+esc(D.CAT[cur].name)+'</h2><p class="sec-s">'+esc(D.CAT[cur].what)+'</p>'+form+evBox+'</div>'+submitBox+'</div><aside class="calc"><div class="panel-dark" id="calc">'+calcPanel(o,r,k)+'</div></aside></div>';
-  return shell('submit', body);
+  var body = head + returned + docsPanel + '<div class="subm"><nav class="catnav" aria-label="Categories">'+catNav+'</nav><div><div class="panel"><h2 class="sec-t">'+esc(D.CAT[cur].name)+'</h2><p class="sec-s">'+esc(D.CAT[cur].what)+'</p>'+form+evBox+'</div>'+submitBox+'</div><aside class="calc"><div class="panel-dark" id="calc">'+calcPanel(o,r,k)+'</div></aside></div>';
+  return shell('entry', body);
+}
+
+/* customer: send documents to YES */
+function vDocuments(){
+  var o=org(), now=nowKey();
+  var rsD=sorted(o), nextK=rsD.length?E.addMonths(rsD[rsD.length-1].month,1):E.addMonths(now,-1), openD=rsD.filter(function(r){ return r.status==='draft'||r.status==='returned'; });
+  var first = openD.length ? openD[openD.length-1].month : (nextK<=now ? nextK : E.addMonths(now,-1));
+  var months=[first]; [now, E.addMonths(now,-1), E.addMonths(now,-2), E.addMonths(now,-3)].forEach(function(k){ if(months.indexOf(k)<0) months.push(k); });
+  var opts=months.map(function(k){ var r=rec(o,k); return '<option value="'+k+'">'+mLabel(k)+(r&&r.status==='verified'?' · already verified':r&&r.status==='submitted'?' · already entered':'')+'</option>'; }).join('');
+  var cats='<option value="">Not sure</option>'+D.CATEGORIES.filter(function(c){ return c.k!=='carbon'; }).map(function(c){ return '<option value="'+c.k+'">'+esc(c.name)+'</option>'; }).join('');
+  var withDocsAll=sorted(o).slice().reverse().filter(function(r){ return (r.inbox||[]).length; }), withDocs=withDocsAll.slice(0,3);
+  var list=withDocs.map(function(r){ var st=r.status==='verified'?'Entered and verified by YES':r.status==='submitted'?'Entered by YES, awaiting verification':'With YES for entry'; return '<div class="panel" style="margin-top:14px"><div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center"><h3>'+mLabel(r.month)+'</h3>'+statusChip(r.status)+'</div><p class="sec-s" style="margin:6px 0 0">'+st+'</p>'+inboxList(r)+'</div>'; }).join('');
+  var intro = isOp() ? 'Documents '+esc(o.profile.org_name)+' has sent. Upload anything that arrived by email so it sits with the month for data entry.' : 'Send the month\'s bills, dockets, statements and registers. YES enters every figure from them; you never key numbers yourself. Documents are due by the 15th of the following month. You can also email them to <a class="link" href="mailto:contact@yes.com.au">contact@yes.com.au</a>.';
+  var body='<div class="pg-head"><div><p class="kicker">Documents</p><h1>'+(isOp()?'Customer documents':'Send documents')+'</h1><p class="pg-sub">'+intro+'</p></div></div>'
+    + '<div class="panel"><h3>Upload</h3><div class="inline-form" style="margin-top:14px"><div class="field"><label for="up-m">Month</label><select id="up-m">'+opts+'</select></div><div class="field"><label for="up-c">What is it about?</label><select id="up-c">'+cats+'</select></div><label class="btn btn-primary">Choose files<input type="file" data-act="inbox-file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.csv,.xlsx,.xls,.doc,.docx,.txt" style="display:none"></label></div><p class="small muted" style="margin:12px 0 0">PDF, images, spreadsheets or documents, up to 15 MB each. In this prototype files stay in this browser.</p></div>'
+    + '<h2 class="sec-t" style="margin-top:28px">Sent so far</h2>'+(list||'<div class="empty">Nothing sent yet.</div>')+(withDocsAll.length>3?'<p class="small muted" style="margin-top:14px">Showing the latest three months. Every earlier document is kept with its month.</p>':'');
+  return shell('documents', body);
 }
 
 function fieldRow(o,r,k,f,editable,dueIds){
@@ -389,7 +434,7 @@ function vReport(k){
     + kvrow('Trees planted',fmt(v.trees),'trees') + kvrow('Program participants',fmt(v.participants),'people')
     + '</tbody></table></div>'
     + '<div class="rp-h">Data quality and evidence</div><div class="rp-tw"><table class="tbl compact"><tbody><tr><td>Required figures supplied</td><td class="num">'+pct(m.complete_pct)+'</td></tr><tr><td>Figures backed by evidence</td><td class="num">'+pct(m.evidence_pct)+'</td></tr><tr><td>Evidence grades</td><td>'+D.CATEGORIES.filter(function(c){return c.k!=='carbon';}).map(function(c){ var e=(r.evidence||{})[c.k]; return esc(c.short)+' '+(e?(e.grade||'…'):'—'); }).join(' · ')+'</td></tr></tbody></table></div>'
-    + '<div class="rp-foot">Method: emissions use the National Greenhouse Accounts Factors 2024 (DCCEEW), location-based electricity for '+esc(p.state)+'. Scope 3 covers waste to landfill and upstream fuel and electricity only. Flights are recorded but not yet converted. Avoided emissions use NSW DECCW (2010) factors, flagged as dated, and are never netted against emissions. Comparisons with the baseline use the same calendar months of '+esc(S.baseline.fy||p.baseline_fy)+'. Full method: yes.com.au/method. Page 2 of 2.</div></section>';
+    + '<div class="rp-foot">Method: emissions use the National Greenhouse Accounts Factors 2024 (DCCEEW), location-based electricity for '+esc(p.state)+'. Scope 3 covers waste to landfill and upstream fuel and electricity only. Flights are recorded but not yet converted. Avoided emissions use NSW DECCW (2010) factors, flagged as dated, and are never netted against emissions. Comparisons with the baseline use the same calendar months of '+esc(S.baseline.fy||p.baseline_fy)+'. Figures are entered by YES from the organisation\'s source documents and verified by a second YES analyst. Full method: yes.com.au/method. Page 2 of 2.</div></section>';
   var body='<div class="pg-head no-print"><div><p class="kicker"><a class="link" href="#/reports">Reports</a></p><h1>'+mLabel(k)+'</h1></div><div class="pg-actions"><button class="btn btn-ink btn-sm" type="button" data-act="print">Print or save as PDF</button><button class="btn btn-ghost btn-sm" type="button" data-act="csv-month" data-month="'+k+'" style="color:var(--ink)">Download figures (CSV)</button></div></div>'
     + '<div class="report">'+sheet1+sheet2+'</div>';
   return shell('report', body);
@@ -397,7 +442,7 @@ function vReport(k){
 
 /* ------------------------------------------------------------------ organisation */
 function vOrganisation(){
-  var o=org(), p=o.profile, ro=isOp();
+  var o=org(), p=o.profile, ro=!isOp();
   var fields=D.PROFILE.map(function(f){
     var v=p[f.id]!=null?p[f.id]:'';
     var input = f.kind==='select' ? '<select id="p-'+f.id+'" data-pf="'+f.id+'"'+(ro?' disabled':'')+'>'+f.options.map(function(op){ return '<option'+(String(v)===op?' selected':'')+'>'+esc(op)+'</option>'; }).join('')+'</select>'
@@ -407,7 +452,7 @@ function vOrganisation(){
     return '<div class="field"><label for="p-'+f.id+'">'+esc(f.name)+(f.req?' <span class="req">*</span>':'')+'</label>'+input+'<span class="hint">'+esc(f.def)+'</span></div>';
   });
   var users=state.users.filter(function(u){ return u.org===o.id; }).map(function(u){ return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.title)+'</td><td class="mono small">'+esc(u.email)+'</td></tr>'; }).join('');
-  var body='<div class="pg-head"><div><p class="kicker">Organisation</p><h1>'+esc(p.org_name)+'</h1><p class="pg-sub">Details used for intensities, the baseline and targets. Changing them recalculates every month.</p></div>'+(ro?'':'<div class="pg-actions"><button class="btn btn-primary btn-sm" type="button" data-act="save-profile">Save changes</button></div>')+'</div>'
+  var body='<div class="pg-head"><div><p class="kicker">Organisation</p><h1>'+esc(p.org_name)+'</h1><p class="pg-sub">Details used for intensities, the baseline and targets. Changing them recalculates every month.'+(ro?' YES keeps these up to date: to change anything, email <a class="link" href="mailto:contact@yes.com.au">contact@yes.com.au</a>.':'')+'</p></div>'+(ro?'':'<div class="pg-actions"><button class="btn btn-primary btn-sm" type="button" data-act="save-profile">Save changes</button></div>')+'</div>'
     + '<div class="row2"><div class="panel"><h3>Profile</h3><div class="stack" style="margin-top:16px">'+fields.slice(0,8).join('')+'</div></div><div class="panel"><h3>Targets</h3><div class="stack" style="margin-top:16px">'+fields.slice(8).join('')+'</div></div></div>'
     + '<h2 class="sec-t" style="margin-top:28px">People with access</h2><p class="sec-s">In production each person has their own sign-in. Demo accounts only here.</p><div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Name</th><th>Role</th><th>Email</th></tr></thead><tbody>'+(users||'<tr><td colspan="3" class="muted">No demo users for this organisation.</td></tr>')+'</tbody></table></div>';
   return shell('organisation', body);
@@ -427,10 +472,10 @@ function vData(){
     + '<button class="btn btn-ink" type="button" data-act="csv-all">Monthly figures (CSV, one row per figure)</button>'
     + '<button class="btn btn-ghost" type="button" data-act="json-all" style="color:var(--ink)">Everything for this organisation (JSON)</button>'
     + '<button class="btn btn-ghost" type="button" data-act="csv-dict" style="color:var(--ink)">The YES data dictionary (CSV)</button></div></div>'
-    + '<div class="panel"><h3>Import figures</h3><p class="sec-s" style="margin-top:6px">A CSV in the same shape as the download (month, field_id, value), or a JSON export. Figures go into draft months only; submitted and verified months are never overwritten.</p>'
+    + (isOp()?'<div class="panel"><h3>Import figures</h3><p class="sec-s" style="margin-top:6px">A CSV in the same shape as the download (month, field_id, value), or a JSON export. Figures go into draft months only; submitted and verified months are never overwritten.</p>'
     + '<label class="btn btn-ghost" style="color:var(--ink)">Choose a CSV or JSON file<input type="file" data-act="import-file" accept=".csv,.json,text/csv,application/json" style="display:none"></label>'
     + (pv?'<div class="callout" style="margin-top:14px"><b>'+esc(pv.name)+'</b>: '+pv.ok+' figures across '+pv.months.length+' month'+(pv.months.length===1?'':'s')+' ready'+(pv.skip?' · '+pv.skip+' skipped (locked months or unknown fields)':'')+'.<div class="btn-row" style="margin-top:12px"><button class="btn btn-primary btn-sm" type="button" data-act="import-go">Import into drafts</button><button class="btn btn-ghost btn-sm" type="button" data-act="import-cancel" style="color:var(--ink)">Cancel</button></div></div>':'')
-    + '</div></div>'
+    + '</div>':'<div class="panel"><h3>Your figures are entered by YES</h3><p class="sec-s" style="margin-top:6px">Send your documents and YES keys every figure. Download everything here whenever you need it: for your annual report, an auditor or your own systems.</p><a class="btn btn-ink" href="#/documents">Send documents</a></div>')+'</div>'
     + '<div class="panel" style="margin-top:22px"><h3>Start the demo again</h3><p class="sec-s" style="margin-top:6px">Replaces everything in this browser with the original demo organisations and removes attached files.</p>'
     + (ui.confirmReset?'<div class="btn-row"><button class="btn btn-ink" type="button" data-act="reset-go">Yes, reset the demo</button><button class="btn btn-ghost" type="button" data-act="reset-cancel" style="color:var(--ink)">Keep my changes</button></div>':'<button class="btn btn-ghost" type="button" data-act="reset-ask" style="color:var(--ink)">Reset demo data</button>')+'</div>';
   return shell('data', body);
@@ -440,15 +485,15 @@ function vData(){
 function flagsFor(o,r){ var n=0; Object.keys(r.values||{}).forEach(function(id){ var f=field(id); if(!f||f.freq==='S'||!isNum(r.values[id])) return; if(warnFor(o,r.month,id,r.values[id])) n++; }); return n; }
 function vQueue(){
   var q=queue(), ret=[]; Object.keys(state.orgs).forEach(function(id){ state.orgs[id].records.forEach(function(r){ if(r.status==='returned') ret.push({org:id,rec:r}); }); });
-  function tr(x){ var o=state.orgs[x.org], r=x.rec, pr=progressOf(o,r), ev=Object.keys(r.evidence||{}).length; return '<tr><td><b>'+esc(o.profile.org_name)+'</b><div class="small muted">'+esc(o.profile.org_type)+' · '+esc(o.profile.state)+'</div></td><td>'+mLabel(r.month)+'</td><td>'+longDate(r.submittedAt)+'</td><td class="num">'+pr.req+' / '+pr.reqDue+'</td><td class="num">'+ev+' / 9</td><td class="num">'+flagsFor(o,r)+'</td><td><a class="btn btn-primary btn-sm" href="#/ops/review/'+x.org+'/'+r.month+'">Review</a></td></tr>'; }
-  var body='<div class="pg-head"><div><p class="kicker">YES team</p><h1>Review queue</h1><p class="pg-sub">Submitted months waiting for YES. Check the figures, grade the evidence, then verify the month or return it with a note.</p></div></div>'
-    + (q.length?'<div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Organisation</th><th>Month</th><th>Submitted</th><th class="r">Required</th><th class="r">Evidence</th><th class="r">Flags</th><th></th></tr></thead><tbody>'+q.map(tr).join('')+'</tbody></table></div>':'<div class="empty">Nothing waiting. Every submitted month has been reviewed.</div>')
-    + (ret.length?'<h2 class="sec-t" style="margin-top:28px">Returned to customers</h2><div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Organisation</th><th>Month</th><th>Note</th></tr></thead><tbody>'+ret.map(function(x){ var n=(x.rec.notes||[]).slice(-1)[0]; return '<tr><td>'+esc(state.orgs[x.org].profile.org_name)+'</td><td>'+mLabel(x.rec.month)+'</td><td class="small">'+esc(n?n.text:'')+'</td></tr>'; }).join('')+'</tbody></table></div>':'');
+  function tr(x){ var o=state.orgs[x.org], r=x.rec, pr=progressOf(o,r), ev=Object.keys(r.evidence||{}).length; return '<tr><td><b>'+esc(o.profile.org_name)+'</b><div class="small muted">'+esc(o.profile.org_type)+' · '+esc(o.profile.state)+'</div></td><td>'+mLabel(r.month)+'</td><td>'+longDate(r.submittedAt)+'</td><td class="num">'+pr.req+' / '+pr.reqDue+'</td><td class="num">'+ev+' / 9</td><td class="num">'+flagsFor(o,r)+'</td><td>'+esc(r.enteredBy||'')+'</td><td><a class="btn btn-primary btn-sm" href="#/ops/review/'+x.org+'/'+r.month+'">Review</a></td></tr>'; }
+  var body='<div class="pg-head"><div><p class="kicker">YES team</p><h1>Verification</h1><p class="pg-sub">Months entered by YES and waiting for a second analyst. Check every figure against its document, grade the evidence, then verify the month or return it to data entry with a note. Nobody verifies a month they entered.</p></div></div>'
+    + (q.length?'<div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Organisation</th><th>Month</th><th>Entered</th><th class="r">Required</th><th class="r">Evidence</th><th class="r">Flags</th><th>Entered by</th><th></th></tr></thead><tbody>'+q.map(tr).join('')+'</tbody></table></div>':'<div class="empty">Nothing waiting. Every entered month has been verified.</div>')
+    + (ret.length?'<h2 class="sec-t" style="margin-top:28px">Returned to data entry</h2><div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Organisation</th><th>Month</th><th>Note</th></tr></thead><tbody>'+ret.map(function(x){ var n=(x.rec.notes||[]).slice(-1)[0]; return '<tr><td>'+esc(state.orgs[x.org].profile.org_name)+'</td><td>'+mLabel(x.rec.month)+'</td><td class="small">'+esc(n?n.text:'')+'</td></tr>'; }).join('')+'</tbody></table></div>':'');
   return shell('ops', body);
 }
 function vCustomers(){
   var rows=Object.keys(state.orgs).map(function(id){ var o=state.orgs[id], S=seriesOf(o), m=monthOf(S), rs=sorted(o), last=rs[rs.length-1]; var waiting=o.records.filter(function(r){ return r.status==='submitted'; }).length;
-    return '<tr><td><b>'+esc(o.profile.org_name)+'</b><div class="small muted">'+esc(o.profile.org_type)+' · '+esc(o.profile.state)+'</div></td><td class="num">'+o.records.length+'</td><td>'+(last?mLabel(last.month)+' '+statusChip(last.status):'—')+'</td><td class="num"><b>'+(m&&m.score!=null?m.score:'—')+'</b></td><td>'+(m?esc(m.band):'—')+'</td><td class="num">'+(m&&m.yoy!=null?sgn(m.yoy):'—')+'</td><td class="num">'+waiting+'</td><td><button class="btn btn-ghost btn-sm" type="button" data-act="view-org" data-org="'+id+'" style="color:var(--ink)">Open dashboard</button></td></tr>'; }).join('');
+    return '<tr><td><b>'+esc(o.profile.org_name)+'</b><div class="small muted">'+esc(o.profile.org_type)+' · '+esc(o.profile.state)+'</div></td><td class="num">'+o.records.length+'</td><td>'+(last?mLabel(last.month)+' '+statusChip(last.status):'—')+'</td><td class="num"><b>'+(m&&m.score!=null?m.score:'—')+'</b></td><td>'+(m?esc(m.band):'—')+'</td><td class="num">'+(m&&m.yoy!=null?sgn(m.yoy):'—')+'</td><td class="num">'+waiting+'</td><td><div class="pill-row"><button class="btn btn-ghost btn-sm" type="button" data-act="view-org" data-org="'+id+'" style="color:var(--ink)">Dashboard</button>'+(openMonths(o).length?'<a class="btn btn-primary btn-sm" href="#/entry/'+id+'/'+openMonths(o)[openMonths(o).length-1].month+'">Enter figures</a>':'')+'</div></td></tr>'; }).join('');
   var body='<div class="pg-head"><div><p class="kicker">YES team</p><h1>Customers</h1><p class="pg-sub">Fictional demo organisations.</p></div></div><div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Organisation</th><th class="r">Months</th><th>Latest month</th><th class="r">Score</th><th>Band</th><th class="r">Year on year</th><th class="r">Waiting</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   return shell('customers', body);
 }
@@ -461,15 +506,15 @@ function vReview(orgId,k){
     var ev=(r.evidence||{})[c.k];
     var rows=fs.map(function(f){ var cv=cmpVals(o,k,f.id), a=r.values[f.id], w=f.freq==='S'?'':warnFor(o,k,f.id,a); return '<tr'+(w?' class="flag"':'')+'><td>'+esc(f.name)+'<div class="id">'+esc(f.id)+'</div>'+(w?'<div class="small" style="color:var(--red)">'+esc(w)+'</div>':'')+'</td><td class="num"><b>'+(isNum(a)?fmtF(f,+a):esc(a))+'</b></td><td>'+esc(f.unit)+'</td><td class="num">'+(cv.prev==null?'—':fmtF(f,cv.prev))+'</td><td class="num">'+(cv.ly==null?'—':fmtF(f,cv.ly))+'</td></tr>'; }).join('');
     var gsel = ev ? '<label class="small">Grade <select class="gsel" data-grade="'+c.k+'"'+(r.status!=='submitted'?' disabled':'')+'><option value="">…</option><option'+(ev.grade==='A'?' selected':'')+'>A</option><option'+(ev.grade==='B'?' selected':'')+'>B</option><option'+(ev.grade==='C'?' selected':'')+'>C</option></select></label>' : '<span class="small muted">No evidence attached</span>';
-    return '<div class="panel" style="margin-top:16px"><div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center"><h3>'+esc(c.name)+'</h3><div class="pill-row" style="align-items:center">'+(ev?'<span class="chip">'+esc(ev.name||'Document')+(ev.demo?' · demo, not stored':'')+'</span>'+(!ev.demo?'<button class="btn btn-ghost btn-sm" type="button" data-act="ev-open" data-key="'+esc(evKey(orgId,k,c.k))+'" style="color:var(--ink)">Open</button>':''):'')+gsel+'</div></div>'
+    return '<div class="panel" style="margin-top:16px"><div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center"><h3>'+esc(c.name)+'</h3><div class="pill-row" style="align-items:center">'+(ev?'<span class="chip">'+esc(ev.name||'Document')+(ev.demo?' · demo, not stored':'')+'</span>'+(!ev.demo?'<button class="btn btn-ghost btn-sm" type="button" data-act="ev-open" data-key="'+esc(ev.key||evKey(orgId,k,c.k))+'" style="color:var(--ink)">Open</button>':''):'')+gsel+'</div></div>'
       + (fs.length?'<div class="tbl-wrap" style="margin-top:12px"><table class="tbl compact"><thead><tr><th>Figure</th><th class="r">'+mShort(k)+'</th><th>Unit</th><th class="r">'+mShort(E.addMonths(k,-1))+'</th><th class="r">'+mShort(E.addMonths(k,-12))+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<p class="sec-s" style="margin-top:8px">No figures entered in this category.</p>')+'</div>';
   }).join('');
-  var canAct = r.status==='submitted';
-  var decision = canAct ? '<div class="panel" style="margin-top:22px"><h3>Decision</h3><p class="sec-s" style="margin-top:6px">Verify once every attached document has a grade. Return the month if a figure needs correcting; the customer sees your note.</p><div class="field" style="margin:12px 0 14px"><label for="rv-note">Note to the customer (required to return)</label><textarea id="rv-note" rows="3" placeholder="For example: diesel is 40% above August last year. Please check the fuel card statement and confirm."></textarea></div><div class="btn-row"><button class="btn btn-primary" type="button" data-act="verify" data-org="'+orgId+'" data-month="'+k+'">Verify '+mShort(k)+'</button><button class="btn btn-ghost" type="button" data-act="return" data-org="'+orgId+'" data-month="'+k+'" style="color:var(--ink)">Return to customer</button></div></div>'
+  var canAct = r.status==='submitted', mine = !!(r.enteredBy && r.enteredBy===me().name);
+  var decision = canAct ? '<div class="panel" style="margin-top:22px"><h3>Decision</h3><p class="sec-s" style="margin-top:6px">Verify once every attached document has a grade. Return the month to data entry if a figure needs correcting; your note goes with it. The customer sees the month once it is verified.</p><div class="field" style="margin:12px 0 14px"><label for="rv-note">Note to data entry (required to return)</label><textarea id="rv-note" rows="3" placeholder="For example: diesel is 40% above August last year. Please recheck the fuel card statement."></textarea></div>'+(mine?'<div class="note-box" style="margin-bottom:12px">You entered this month, so a different analyst must verify it. Sign in as another YES team member to verify.</div>':'')+'<div class="btn-row"><button class="btn btn-primary'+(mine?' is-disabled':'')+'" type="button" data-act="verify" data-org="'+orgId+'" data-month="'+k+'"'+(mine?' aria-disabled="true"':'')+'>Verify '+mShort(k)+'</button><button class="btn btn-ghost" type="button" data-act="return" data-org="'+orgId+'" data-month="'+k+'" style="color:var(--ink)">Return to data entry</button></div></div>'
     : '<div class="banner grey" style="margin-top:22px"><span>This month is '+esc(r.status)+'. '+(r.verifiedAt?'Verified '+longDate(r.verifiedAt)+(r.verifiedBy?' by '+esc(r.verifiedBy):'')+'.':'')+'</span></div>';
-  var body='<div class="pg-head"><div><p class="kicker"><a class="link" href="#/ops">Review queue</a> · '+statusChip(r.status)+'</p><h1>'+esc(o.profile.org_name)+' · '+mLabel(k)+'</h1><p class="pg-sub">Submitted '+longDate(r.submittedAt)+' · '+pr.req+' of '+pr.reqDue+' required figures · '+flagsFor(o,r)+' figures flagged for a second look</p></div></div>'
+  var body='<div class="pg-head"><div><p class="kicker"><a class="link" href="#/ops">Review queue</a> · '+statusChip(r.status)+'</p><h1>'+esc(o.profile.org_name)+' · '+mLabel(k)+'</h1><p class="pg-sub">Entered '+longDate(r.enteredAt||r.submittedAt)+(r.enteredBy?' by '+esc(r.enteredBy):'')+' · '+pr.req+' of '+pr.reqDue+' required figures · '+flagsFor(o,r)+' figures flagged for a second look</p></div></div>'
     + '<div class="row3"><div class="panel metric"><div class="k">Emissions this month</div><div class="v">'+fmt(calc.total_t,1)+'<span class="u">t CO₂-e</span></div><div class="s">Scope 1 '+fmt(calc.scope1_t,1)+' · Scope 2 '+fmt(calc.scope2_t,1)+' · Scope 3 '+fmt(calc.scope3_t,1)+'</div></div><div class="panel metric"><div class="k">Renewable · fleet electric</div><div class="v">'+pct(calc.renew_pct)+'<span class="u">·</span> '+pct(calc.fleet_ev_pct)+'</div><div class="s">Grid '+fmt(calc.grid_kwh)+' kWh</div></div><div class="panel metric"><div class="k">Landfill diversion</div><div class="v">'+pct(calc.diversion_pct,1)+'</div><div class="s">'+fmt(calc.waste_total_t,1)+' t total · '+fmt(calc.landfill_t,1)+' t landfill</div></div></div>'
-    + sections + decision;
+    + '<div class="panel" style="margin-top:16px"><h3>Documents from '+esc(o.profile.org_name)+'</h3>'+inboxList(r)+'</div>' + sections + decision;
   return shell('ops', body);
 }
 function vFactors(){
@@ -497,17 +542,19 @@ function render(){
   var h=parseHash(), P=h.parts, q=h.q, html;
   var u=me();
   if(!u){ html=vLogin(); }
-  else if(!P.length){ go(isOp()?'#/ops':'#/dashboard'); return; }
+  else if(!P.length){ go(isOp()?(u.home||'#/ops'):'#/dashboard'); return; }
   else {
     var a=P[0];
     if(a==='dashboard') html=vDashboard(q);
     else if(a==='category') html=vCategory(P[1],q);
-    else if(a==='submit') html=P[1]?vSubmit(P[1],q):vSubmitIndex();
+    else if(a==='submit'){ go(isOp()?'#/ops/entry':'#/dashboard'); return; }
+    else if(a==='entry' && isOp()){ if(P[1] && state.orgs[P[1]] && state.session.viewOrg!==P[1]){ state.session.viewOrg=P[1]; save(); } html=P[2]?vSubmit(P[2],q):vEntryQueue(); }
+    else if(a==='documents') html=vDocuments();
     else if(a==='reports') html=vReports();
     else if(a==='report') html=vReport(P[1]);
     else if(a==='organisation') html=vOrganisation();
-    else if(a==='data' && !isOp()) html=vData();
-    else if(a==='ops' && isOp()){ html = !P[1] ? vQueue() : P[1]==='customers' ? vCustomers() : P[1]==='review' ? vReview(P[2],P[3]) : P[1]==='factors' ? vFactors() : P[1]==='activity' ? vActivity() : vNotFound(); }
+    else if(a==='data') html=vData();
+    else if(a==='ops' && isOp()){ html = !P[1] ? vQueue() : P[1]==='entry' ? vEntryQueue() : P[1]==='customers' ? vCustomers() : P[1]==='review' ? vReview(P[2],P[3]) : P[1]==='factors' ? vFactors() : P[1]==='activity' ? vActivity() : vNotFound(); }
     else html=vNotFound();
   }
   app.innerHTML=html;
@@ -522,7 +569,7 @@ function bindMedia(){ // ambient video on the sign-in screen
 /* ------------------------------------------------------------------ events */
 var saveT=null;
 function scheduleSave(){ clearTimeout(saveT); var s=$('#saved'); if(s) s.textContent='Saving…'; saveT=setTimeout(function(){ if(save()){ var s2=$('#saved'); if(s2) s2.textContent='Saved in this browser · '+new Date().toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'}); } },350); }
-function currentSubmit(){ var h=parseHash(); if(h.parts[0]!=='submit'||!h.parts[1]) return null; var o=org(), r=rec(o,h.parts[1]); return r?{o:o,r:r,k:h.parts[1]}:null; }
+function currentSubmit(){ var h=parseHash(); if(h.parts[0]!=='entry'||!h.parts[2]) return null; var o=state.orgs[h.parts[1]]; if(!o) return null; var r=rec(o,h.parts[2]); return r?{o:o,r:r,k:h.parts[2]}:null; }
 
 app.addEventListener('input', function(e){
   var t=e.target;
@@ -544,19 +591,28 @@ app.addEventListener('change', function(e){
   if(act==='dash-month'){ go('#/dashboard?m='+t.value); }
   else if(act==='ev-file' && t.files && t.files[0]){ attach(t.getAttribute('data-cat'), t.files[0]); }
   else if(act==='import-file' && t.files && t.files[0]){ previewImport(t.files[0]); }
+  else if(act==='ev-pick' && t.value!==''){ var c3=currentSubmit(); if(!c3) return; var d=(c3.r.inbox||[])[+t.value]; if(!d) return; c3.r.evidence=c3.r.evidence||{}; c3.r.evidence[t.getAttribute('data-cat')]={name:d.name,size:d.size,type:d.type,at:isoNow(),pending:true,grade:null,key:d.key,demo:!d.key}; save(); render(); }
+  else if(act==='inbox-file' && t.files && t.files.length){ sendDocs([].slice.call(t.files)); }
   else if(t.hasAttribute('data-grade')){ var h=parseHash(), o=state.orgs[h.parts[2]], r=rec(o,h.parts[3]); var cat=t.getAttribute('data-grade'); if(r&&r.evidence&&r.evidence[cat]){ r.evidence[cat].grade=t.value||null; if(t.value) r.evidence[cat].pending=false; else r.evidence[cat].pending=true; save(); } }
 });
 function attach(cat,file){
   var c=currentSubmit(); if(!c) return;
   if(file.size>15*1024*1024){ flash('That file is over 15 MB. Attach a smaller copy.','err'); return; }
   var key=evKey(c.o.id,c.k,cat);
-  putFile(key,file).then(function(){ c.r.evidence=c.r.evidence||{}; c.r.evidence[cat]={name:file.name,size:file.size,type:file.type,at:isoNow(),pending:true,grade:null}; save(); log('Evidence attached',D.CAT[cat].name+' · '+file.name+' · '+mLabel(c.k)); save(); render(); flash('Attached '+file.name); })
+  putFile(key,file).then(function(){ c.r.evidence=c.r.evidence||{}; c.r.evidence[cat]={name:file.name,size:file.size,type:file.type,at:isoNow(),pending:true,grade:null,key:key}; save(); log('Evidence attached',D.CAT[cat].name+' · '+file.name+' · '+mLabel(c.k)); save(); render(); flash('Attached '+file.name); })
     .catch(function(){ flash('This browser would not store the file.','err'); });
 }
 app.addEventListener('dragover', function(e){ var z=e.target.closest&&e.target.closest('[data-drop]'); if(z){ e.preventDefault(); z.classList.add('drag'); } });
 app.addEventListener('dragleave', function(e){ var z=e.target.closest&&e.target.closest('[data-drop]'); if(z) z.classList.remove('drag'); });
-app.addEventListener('drop', function(e){ var z=e.target.closest&&e.target.closest('[data-drop]'); if(!z) return; e.preventDefault(); z.classList.remove('drag'); var c=currentSubmit(); if(!c||isOp()||!(c.r.status==='draft'||c.r.status==='returned')) return; var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) attach(z.getAttribute('data-drop'),f); });
+app.addEventListener('drop', function(e){ var z=e.target.closest&&e.target.closest('[data-drop]'); if(!z) return; e.preventDefault(); z.classList.remove('drag'); var c=currentSubmit(); if(!c||!isOp()||!(c.r.status==='draft'||c.r.status==='returned')) return; var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) attach(z.getAttribute('data-drop'),f); });
 
+function sendDocs(files){
+  var o=org(), k=($('#up-m')||{}).value||E.addMonths(nowKey(),-1), cat=($('#up-c')||{}).value||'';
+  var big=files.filter(function(f){ return f.size>15*1024*1024; }); if(big.length){ flash(big[0].name+' is over 15 MB. Send a smaller copy.','err'); return; }
+  var r=rec(o,k); var created=false; if(!r){ r={month:k, values:{}, evidence:{}, status:'draft', inbox:[]}; o.records.push(r); created=true; } r.inbox=r.inbox||[];
+  var jobs=files.map(function(f,i){ var key='inbox/'+o.id+'/'+k+'/'+Date.now()+'-'+i; return putFile(key,f).then(function(){ r.inbox.push({key:key,name:f.name,size:f.size,type:f.type,cat:cat,at:isoNow(),by:me().name}); }); });
+  Promise.all(jobs).then(function(){ log('Documents received',files.length+' for '+mLabel(k)+(created?' · month opened for data entry':''),o.id); save(); render(); flash(files.length+' document'+(files.length===1?'':'s')+' sent to YES for '+mLabel(k)+'.'); }).catch(function(){ flash('This browser would not store the files.','err'); });
+}
 function previewImport(file){
   var rd=new FileReader(); rd.onload=function(){
     var o=org(), text=String(rd.result||''), items=[], skip=0;
@@ -577,7 +633,7 @@ document.addEventListener('click', function(e){
   var act=t.getAttribute('data-act'), o;
   if(t.tagName==='INPUT'||t.tagName==='SELECT') return;
   switch(act){
-    case 'login': state.session={user:t.getAttribute('data-user')}; if(isOp()) state.session.viewOrg='demo-shire'; save(); go(isOp()?'#/ops':'#/dashboard'); break;
+    case 'login': state.session={user:t.getAttribute('data-user')}; if(isOp()) state.session.viewOrg='demo-shire'; save(); go(isOp()?(me().home||'#/ops'):'#/dashboard'); break;
     case 'ltab': ui.loginTab=t.getAttribute('data-tab'); render(); break;
     case 'signout': state.session=null; ui.loginTab='customer'; save(); go('#/'); render(); break;
     case 'side-open': $('#side').classList.add('open'); break;
@@ -587,11 +643,11 @@ document.addEventListener('click', function(e){
     case 'reset-cancel': ui.confirmReset=false; render(); break;
     case 'view-org': state.session.viewOrg=t.getAttribute('data-org'); save(); go('#/dashboard'); break;
     case 'print': window.print(); break;
-    case 'start-month': o=org(); var nk=t.getAttribute('data-month'); if(!rec(o,nk)){ o.records.push({month:nk, values:{}, evidence:{}, status:'draft'}); log('Month started',mLabel(nk)); save(); } go('#/submit/'+nk); break;
+    case 'start-month': o=state.orgs[t.getAttribute('data-org')]||org(); var nk=t.getAttribute('data-month'); if(!rec(o,nk)){ o.records.push({month:nk, values:{}, evidence:{}, status:'draft', inbox:[], enteredBy:me().name}); log('Month opened for data entry',mLabel(nk),o.id); save(); } go('#/entry/'+o.id+'/'+nk); break;
     case 'submit-ask': ui.confirmSubmit=true; render(); var sb=$('#submit-box'); if(sb) sb.scrollIntoView({block:'center'}); break;
     case 'submit-cancel': ui.confirmSubmit=false; render(); break;
-    case 'submit-month': var c=currentSubmit(); if(!c) return; var pr=progressOf(c.o,c.r); if(pr.missing.length){ flash('Some required figures are still missing.','err'); return; } if(!$('#attest')||!$('#attest').checked){ flash('Please tick the confirmation first.','err'); return; } c.r.status='submitted'; c.r.submittedAt=isoNow().slice(0,10); c.r.submittedBy=me().name; Object.keys(c.r.evidence||{}).forEach(function(cat){ if(!c.r.evidence[cat].grade) c.r.evidence[cat].pending=true; }); log('Month submitted',mLabel(c.k)+' · '+pr.req+' required figures'); save(); ui.confirmSubmit=false; flash(mLabel(c.k)+' submitted to YES.'); go('#/dashboard?m='+c.k); break;
-    case 'ev-remove': var c2=currentSubmit(); if(!c2) return; var cat=t.getAttribute('data-cat'); delFile(evKey(c2.o.id,c2.k,cat)).catch(function(){}); delete c2.r.evidence[cat]; save(); render(); break;
+    case 'submit-month': var c=currentSubmit(); if(!c) return; var pr=progressOf(c.o,c.r); if(pr.missing.length){ flash('Some required figures are still missing.','err'); return; } if(!$('#attest')||!$('#attest').checked){ flash('Please tick the confirmation first.','err'); return; } c.r.status='submitted'; c.r.submittedAt=isoNow().slice(0,10); c.r.enteredAt=c.r.submittedAt; c.r.enteredBy=me().name; Object.keys(c.r.evidence||{}).forEach(function(cat){ if(!c.r.evidence[cat].grade) c.r.evidence[cat].pending=true; }); log('Month entered and sent for verification',mLabel(c.k)+' · '+pr.req+' required figures',c.o.id); save(); ui.confirmSubmit=false; flash(c.o.profile.org_name+' · '+mLabel(c.k)+' sent for verification.'); go('#/ops/entry'); break;
+    case 'ev-remove': var c2=currentSubmit(); if(!c2) return; var cat=t.getAttribute('data-cat'), ek=evKey(c2.o.id,c2.k,cat), cur2=c2.r.evidence[cat]; if(cur2 && cur2.key===ek) delFile(ek).catch(function(){}); delete c2.r.evidence[cat]; save(); render(); break;
     case 'ev-open': getFile(t.getAttribute('data-key')).then(function(f){ if(!f){ flash('That file is not stored in this browser.','err'); return; } var u=URL.createObjectURL(f); window.open(u,'_blank'); setTimeout(function(){ URL.revokeObjectURL(u); },60000); }).catch(function(){ flash('That file is not stored in this browser.','err'); }); break;
     case 'save-profile': o=org(); var errs=[]; $$('[data-pf]').forEach(function(el){ var id=el.getAttribute('data-pf'), f=field(id), v=el.value; if(f.kind==='number'||f.kind==='count'||f.kind==='percent'){ if(v===''){ if(f.req) errs.push(f.name); else delete o.profile[id]; } else if(!isFinite(+v)||+v<0){ errs.push(f.name); } else o.profile[id]=+v; } else { if(v===''&&f.req) errs.push(f.name); else o.profile[id]=v; } }); if(errs.length){ flash('Check: '+errs.join(', '),'err'); return; } log('Profile updated',''); save(); flash('Saved. Every month has been recalculated.'); render(); break;
     case 'csv-all': o=org(); download(o.id+'-monthly-figures.csv', longRows(o), 'text/csv'); break;
@@ -599,9 +655,9 @@ document.addEventListener('click', function(e){
     case 'json-all': o=org(); download(o.id+'-yes-export.json', JSON.stringify({exported:isoNow(), method:E.VERSION, dictionary:D.VERSION, profile:o.profile, records:o.records},null,2), 'application/json'); break;
     case 'csv-dict': var rows=[['id','name','category','type','unit','frequency','mandatory','kind','source','definition','calculation','scores']].concat(D.FIELDS.map(function(f){ return [f.id,f.name,D.CAT[f.cat].name,f.type==='calc'?'Calculated by YES':'Entered by customer',f.unit,D.FREQ[f.freq],f.type==='calc'?'n/a':(f.req?'yes':'no'),f.kind,f.src,f.def,f.calc||'',(f.score||[]).map(function(s){ return D.CAT[s]?D.CAT[s].name:s; }).join('; ')]; })); download('yes-data-dictionary.csv', rows.map(function(r){ return r.map(csvCell).join(','); }).join('\n'), 'text/csv'); break;
     case 'import-cancel': ui.importPreview=null; render(); break;
-    case 'import-go': o=org(); var pv=ui.importPreview; if(!pv) return; pv.items.forEach(function(it){ var r=rec(o,it[0]); if(!r){ r={month:it[0],values:{},evidence:{},status:'draft'}; o.records.push(r); } if(r.status==='submitted'||r.status==='verified') return; var f=D.FIELD[it[1]]; var v=it[2]; if(f.kind==='text'||f.kind==='select'){ if(v!=='') r.values[it[1]]=v; } else if(v!==''&&isFinite(+v)) r.values[it[1]]=+v; }); log('Figures imported',pv.ok+' figures from '+pv.name); save(); ui.importPreview=null; flash('Imported '+pv.ok+' figures into draft months.'); go('#/submit'); break;
-    case 'verify': var ov=state.orgs[t.getAttribute('data-org')], rv=rec(ov,t.getAttribute('data-month')); var ungraded=Object.keys(rv.evidence||{}).filter(function(cat){ return !rv.evidence[cat].grade; }); if(ungraded.length){ flash('Grade every attached document first ('+ungraded.map(function(c){ return D.CAT[c].short; }).join(', ')+').','err'); return; } rv.status='verified'; rv.verifiedAt=isoNow().slice(0,10); rv.verifiedBy=me().name; var note=($('#rv-note')||{}).value; if(note){ rv.notes=rv.notes||[]; rv.notes.push({by:me().name,at:isoNow(),text:note}); } log('Month verified',mLabel(rv.month),ov.id); save(); flash(ov.profile.org_name+' · '+mLabel(rv.month)+' verified.'); go('#/ops'); break;
-    case 'return': var or=state.orgs[t.getAttribute('data-org')], rr=rec(or,t.getAttribute('data-month')); var nt=($('#rv-note')||{}).value; if(!nt||!nt.trim()){ flash('Add a note so the customer knows what to fix.','err'); var ta=$('#rv-note'); if(ta) ta.focus(); return; } rr.status='returned'; rr.notes=rr.notes||[]; rr.notes.push({by:me().name,at:isoNow(),text:nt.trim()}); log('Month returned',mLabel(rr.month)+' · '+nt.trim(),or.id); save(); flash('Returned to '+or.profile.org_name+'.'); go('#/ops'); break;
+    case 'import-go': o=org(); var pv=ui.importPreview; if(!pv) return; pv.items.forEach(function(it){ var r=rec(o,it[0]); if(!r){ r={month:it[0],values:{},evidence:{},status:'draft'}; o.records.push(r); } if(r.status==='submitted'||r.status==='verified') return; var f=D.FIELD[it[1]]; var v=it[2]; if(f.kind==='text'||f.kind==='select'){ if(v!=='') r.values[it[1]]=v; } else if(v!==''&&isFinite(+v)) r.values[it[1]]=+v; }); log('Figures imported',pv.ok+' figures from '+pv.name); save(); ui.importPreview=null; flash('Imported '+pv.ok+' figures into months open for data entry.'); go('#/ops/entry'); break;
+    case 'verify': var ov=state.orgs[t.getAttribute('data-org')], rv=rec(ov,t.getAttribute('data-month')); if(rv.enteredBy && rv.enteredBy===me().name){ flash('You entered this month, so a different analyst must verify it.','err'); return; } var ungraded=Object.keys(rv.evidence||{}).filter(function(cat){ return !rv.evidence[cat].grade; }); if(ungraded.length){ flash('Grade every attached document first ('+ungraded.map(function(c){ return D.CAT[c].short; }).join(', ')+').','err'); return; } rv.status='verified'; rv.verifiedAt=isoNow().slice(0,10); rv.verifiedBy=me().name; var note=($('#rv-note')||{}).value; if(note){ rv.notes=rv.notes||[]; rv.notes.push({by:me().name,at:isoNow(),text:note}); } log('Month verified',mLabel(rv.month),ov.id); save(); flash(ov.profile.org_name+' · '+mLabel(rv.month)+' verified.'); go('#/ops'); break;
+    case 'return': var or=state.orgs[t.getAttribute('data-org')], rr=rec(or,t.getAttribute('data-month')); var nt=($('#rv-note')||{}).value; if(!nt||!nt.trim()){ flash('Add a note so the customer knows what to fix.','err'); var ta=$('#rv-note'); if(ta) ta.focus(); return; } rr.status='returned'; rr.notes=rr.notes||[]; rr.notes.push({by:me().name,at:isoNow(),text:nt.trim()}); log('Month returned to data entry',mLabel(rr.month)+' · '+nt.trim(),or.id); save(); flash('Returned to data entry with your note.'); go('#/ops'); break;
   }
 });
 
